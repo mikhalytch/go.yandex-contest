@@ -1,6 +1,37 @@
 package main
 
-import "testing"
+import (
+	"bytes"
+	"fmt"
+	"testing"
+)
+
+func TestGenerateBracketSequences(t *testing.T) {
+	tests := []struct {
+		in   int
+		want string
+	}{
+		{2, `(())
+()()
+`},
+		{3, `((()))
+(()())
+(())()
+()(())
+()()()
+`},
+	}
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("%d", test.in), func(t *testing.T) {
+			buffer := bytes.Buffer{}
+			GenerateBracketSequences(test.in, &buffer)
+			got := buffer.String()
+			if got != test.want {
+				t.Fatalf("Got %q brackets, want %q", got, test.want)
+			}
+		})
+	}
+}
 
 func TestIsCorrectBracketSequence(t *testing.T) {
 	tests := []struct {
