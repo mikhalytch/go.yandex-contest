@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"yandex-contest.20220116/level1"
+	"yandex-contest.20220116/a"
 )
 
 func TestCountJewels(t *testing.T) {
