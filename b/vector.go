@@ -10,9 +10,11 @@ import (
 
 func main() {
 	input := ReadInput(os.Stdin)
-	vector := FindLongestVector(input, 1)
+	vector := FindLongestVector(input, byte(1))
 	fmt.Printf("%d\n", vector)
 }
+
+const maxVectorLength = 10000
 
 func ReadInput(reader io.Reader) []byte {
 	scanner := bufio.NewScanner(reader)
@@ -27,6 +29,9 @@ func ReadInput(reader io.Reader) []byte {
 			if err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "Error parsing first line: %s", err)
 				return nil
+			}
+			if s > maxVectorLength {
+				_, _ = fmt.Fprintf(os.Stderr, "Expected at most %d numbers vector, got %d", maxVectorLength, s)
 			}
 			size = s
 			result = make([]byte, 0, s)
@@ -71,6 +76,7 @@ func (v *VectorRegistrar) add(b byte) {
 		v.curLength = 0
 	} else {
 		v.curLength++
+		v.m.register(v.curLength)
 	}
 }
 
