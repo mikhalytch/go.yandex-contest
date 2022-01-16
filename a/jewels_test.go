@@ -9,7 +9,7 @@ import (
 )
 
 func TestCountJewels(t *testing.T) {
-	want := 4
+	want := uint(4)
 	jewels := "ab"
 	stones := "aabbccd"
 	got := main.CountJewels(jewels, stones)

@@ -31,12 +31,12 @@ func ReadInput(r io.Reader) InputFile {
 	return result
 }
 
-func CountJewels(j string, s string) int {
+func CountJewels(j string, s string) uint {
 	jDict := make(map[rune]bool)
 	for _, jewel := range j {
 		jDict[jewel] = true
 	}
-	result := 0
+	var result uint
 	if len(jDict) == 0 {
 		return result
 	}
