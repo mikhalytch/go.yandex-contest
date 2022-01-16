@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
 	"strconv"
 )
 
@@ -52,16 +51,22 @@ func IsCorrectBracketSequence(maxLength int, b *bTree) (bool, error) {
 }
 
 type sequencesAggregator struct {
-	sequences []string
+	sequences [][]rune
 }
 
 func GenerateBracketSequences(in int, writer io.Writer) {
 	var agg sequencesAggregator
 	maxLength := in * 2
 	buildSequences(maxLength, maxLength-1, &agg, bTree{'(', nil})
-	sort.Strings(agg.sequences)
+	// todo cleanup
+	//nAgg := sequencesAggregator{sequences: make([]string, len(agg.sequences))}
+	//copy(nAgg.sequences, agg.sequences)
+	//sort.Strings(agg.sequences)
+	//if !reflect.DeepEqual(nAgg, agg) {
+	//	log.Println("They actually differ!")
+	//}
 	for _, a := range agg.sequences {
-		_, _ = fmt.Fprintln(writer, a)
+		_, _ = fmt.Fprintln(writer, string(a))
 	}
 }
 
@@ -69,12 +74,12 @@ var brackets = []rune{'(', ')'}
 
 func buildSequences(maxLength int, runesLeft int, agg *sequencesAggregator, b bTree) {
 	isCorrectSeq, err := IsCorrectBracketSequence(maxLength, &b)
-	if err != nil { // fail fast at any
+	if err != nil { // fail fast at any length
 		return
 	}
 	if runesLeft <= 0 {
 		if isCorrectSeq {
-			agg.sequences = append(agg.sequences, b.print())
+			agg.sequences = append(agg.sequences, b.reverseRunes())
 		}
 		return
 	}
@@ -83,24 +88,15 @@ func buildSequences(maxLength int, runesLeft int, agg *sequencesAggregator, b bT
 	}
 }
 
-func NewBTree(s string) *bTree {
-	var prev *bTree
-	for _, r := range s {
-		prev = &bTree{r, prev}
-	}
-	return prev
-}
-
 type bTree struct {
 	r    rune
 	tail *bTree
 }
 
 func (b *bTree) push(r rune) bTree { return bTree{r, b} }
-
 func (b *bTree) reverseRunes() []rune {
-	if b == nil {
-		return []rune{}
+	if b.tail == nil {
+		return []rune{b.r}
 	}
 	return append(b.tail.reverseRunes(), b.r)
 }

@@ -74,9 +74,17 @@ func TestIsCorrectBracketSequence(t *testing.T) {
 		{"()()", 4, true, nil},
 		{"(())", 4, true, nil},
 	}
+	newBTree := func(s string) *bTree {
+		var prev *bTree
+		for _, r := range s {
+			prev = &bTree{r, prev}
+		}
+		return prev
+	}
+
 	for _, test := range tests {
 		t.Run(test.in, func(t *testing.T) {
-			got, err := IsCorrectBracketSequence(test.maxLen, NewBTree(test.in))
+			got, err := IsCorrectBracketSequence(test.maxLen, newBTree(test.in))
 			if got != test.want {
 				t.Fatalf("Got %v sequence, want %v", got, test.want)
 			}
