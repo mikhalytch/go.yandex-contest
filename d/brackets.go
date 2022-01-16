@@ -97,15 +97,11 @@ type bTree struct {
 }
 
 func (b *bTree) push(r rune) bTree { return bTree{r, b} }
+
 func (b *bTree) reverseRunes() []rune {
-	var runes []rune
-	for c := b; c != nil; c = c.tail {
-		runes = append(runes, c.r)
+	if b == nil {
+		return []rune{}
 	}
-	var rRunes []rune
-	for i := len(runes) - 1; i >= 0; i-- {
-		rRunes = append(rRunes, runes[i])
-	}
-	return rRunes
+	return append(b.tail.reverseRunes(), b.r)
 }
 func (b *bTree) print() string { return string(b.reverseRunes()) }
