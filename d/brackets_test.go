@@ -11,6 +11,8 @@ func TestGenerateBracketSequences(t *testing.T) {
 		in   int
 		want string
 	}{
+		{0, ""},
+		{1, "()\n"},
 		{2, `(())
 ()()
 `},

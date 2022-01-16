@@ -59,7 +59,7 @@ func GenerateBracketSequences(in int, writer io.Writer) {
 var brackets = []rune{'(', ')'}
 
 func buildSequences(in int, agg *sequencesAggregator, b bTree) {
-	if in == 0 {
+	if in <= 0 {
 		s := b.print()
 		if IsCorrectBracketSequence(s) {
 			agg.sequences = append(agg.sequences, s)
