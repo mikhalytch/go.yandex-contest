@@ -7,7 +7,6 @@ import (
 	"os"
 	"sort"
 	"strconv"
-	"strings"
 )
 
 func main() {
@@ -41,11 +40,11 @@ func (i ConstErr) Error() string {
 
 const IncorrectSeq ConstErr = "sequence is incorrect"
 
-func IsCorrectBracketSequence(in string) (bool, error) {
+func IsCorrectBracketSequence(maxLength int, b *bTree) (bool, error) {
 	ctr := bracketCtr{}
-	for _, r := range in {
+	for _, r := range b.reverseRunes() {
 		ctr.register(r)
-		if ctr.openAmt < 0 {
+		if ctr.openAmt < 0 || ctr.openAmt > maxLength/2 {
 			return false, IncorrectSeq
 		}
 	}
@@ -58,7 +57,8 @@ type sequencesAggregator struct {
 
 func GenerateBracketSequences(in int, writer io.Writer) {
 	var agg sequencesAggregator
-	buildSequences(in*2-1, &agg, bTree{'(', nil})
+	maxLength := in * 2
+	buildSequences(maxLength, maxLength-1, &agg, bTree{'(', nil})
 	sort.Strings(agg.sequences)
 	for _, a := range agg.sequences {
 		_, _ = fmt.Fprintln(writer, a)
@@ -67,21 +67,28 @@ func GenerateBracketSequences(in int, writer io.Writer) {
 
 var brackets = []rune{'(', ')'}
 
-func buildSequences(in int, agg *sequencesAggregator, b bTree) {
-	s := b.print()
-	isCorrectSeq, err := IsCorrectBracketSequence(s)
+func buildSequences(maxLength int, runesLeft int, agg *sequencesAggregator, b bTree) {
+	isCorrectSeq, err := IsCorrectBracketSequence(maxLength, &b)
 	if err != nil { // fail fast at any
 		return
 	}
-	if in <= 0 {
+	if runesLeft <= 0 {
 		if isCorrectSeq {
-			agg.sequences = append(agg.sequences, s)
+			agg.sequences = append(agg.sequences, b.print())
 		}
 		return
 	}
 	for _, bracket := range brackets {
-		buildSequences(in-1, agg, b.push(bracket))
+		buildSequences(maxLength, runesLeft-1, agg, b.push(bracket))
 	}
+}
+
+func NewBTree(s string) *bTree {
+	var prev *bTree
+	for _, r := range s {
+		prev = &bTree{r, prev}
+	}
+	return prev
 }
 
 type bTree struct {
@@ -90,14 +97,15 @@ type bTree struct {
 }
 
 func (b *bTree) push(r rune) bTree { return bTree{r, b} }
-func (b *bTree) print() string {
+func (b *bTree) reverseRunes() []rune {
 	var runes []rune
 	for c := b; c != nil; c = c.tail {
 		runes = append(runes, c.r)
 	}
-	builder := strings.Builder{}
+	var rRunes []rune
 	for i := len(runes) - 1; i >= 0; i-- {
-		builder.WriteRune(runes[i])
+		rRunes = append(rRunes, runes[i])
 	}
-	return builder.String()
+	return rRunes
 }
+func (b *bTree) print() string { return string(b.reverseRunes()) }
