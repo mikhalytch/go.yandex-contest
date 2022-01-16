@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -10,11 +11,11 @@ import (
 )
 
 func main() {
-	t, err := io.ReadAll(os.Stdin)
-	if err != nil {
+	scanner := bufio.NewScanner(os.Stdin)
+	if !scanner.Scan() {
 		return
 	}
-	num, err := strconv.Atoi(string(t))
+	num, err := strconv.Atoi(scanner.Text())
 	if err != nil {
 		return
 	}
