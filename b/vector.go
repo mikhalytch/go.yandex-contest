@@ -6,57 +6,49 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 )
 
 func main() {
 	input := ReadInput(os.Stdin)
-	vector := FindLongestVector(input, byte(1))
-	fmt.Printf("%d\n", vector)
+	length := FindLongestVector(input, byte(1))
+	fmt.Printf("%d\n", length)
 }
 
 const maxVectorLength = 10000
 
 func ReadInput(reader io.Reader) []byte {
 	scanner := bufio.NewScanner(reader)
-	var size int
-	var result []byte
-	lineIdx := 0
-	for ; scanner.Scan(); lineIdx++ {
-		text := scanner.Text()
-		switch lineIdx == 0 {
-		case true:
-			s, err := strconv.Atoi(text)
-			if err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "Error parsing first line: %s", err)
-				return nil
-			}
-			if s > maxVectorLength {
-				_, _ = fmt.Fprintf(os.Stderr, "Expected at most %d numbers vector, got %d", maxVectorLength, s)
-			}
-			size = s
-			result = make([]byte, 0, s)
-		default:
-			var b byte
-			if text == "0" {
-				b = 0
-			} else if text == "1" {
-				b = 1
-			} else {
-				_, _ = fmt.Fprintf(os.Stderr, "Error parsing line idx %d: %q", lineIdx, text)
-				return nil
-			}
-			result = append(result, b)
-		}
+	if !scanner.Scan() {
+		return nil
 	}
-	if size != lineIdx {
+	size, err := strconv.Atoi(strings.TrimSpace(scanner.Text()))
+	if err != nil || size > maxVectorLength {
+		return nil
+	}
+	result := make([]byte, 0, size)
+
+	for lineIdx := 0; scanner.Scan() && lineIdx < size; lineIdx++ {
+		text := strings.TrimSpace(scanner.Text())
+		num, err := strconv.Atoi(text)
+		if err != nil {
+			return nil
+		}
+		var b byte
+		if num == 1 {
+			b = 1
+		} else {
+			b = 0
+		}
+		result = append(result, b)
+	}
+	if size != len(result) {
 		return nil
 	}
 	return result
 }
 
-type MaxAggregator struct {
-	curMax uint
-}
+type MaxAggregator struct{ curMax uint }
 
 func (m *MaxAggregator) register(n uint) {
 	if n > m.curMax {
