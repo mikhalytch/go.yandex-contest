@@ -37,21 +37,25 @@ func TestGenerateBracketSequences(t *testing.T) {
 
 func TestIsCorrectBracketSequence(t *testing.T) {
 	tests := []struct {
-		in   string
-		want bool
+		in      string
+		want    bool
+		wantErr error
 	}{
-		{"()", true},
-		{"(", false},
-		{")(", false},
-		{")", false},
-		{"()()", true},
-		{"(())", true},
+		{"()", true, nil},
+		{"(", false, nil},
+		{")(", false, IncorrectSeq},
+		{")", false, IncorrectSeq},
+		{"()()", true, nil},
+		{"(())", true, nil},
 	}
 	for _, test := range tests {
 		t.Run(test.in, func(t *testing.T) {
-			got := IsCorrectBracketSequence(test.in)
+			got, err := IsCorrectBracketSequence(test.in)
 			if got != test.want {
 				t.Fatalf("Got %v sequence, want %v", got, test.want)
+			}
+			if err != test.wantErr {
+				t.Fatalf("Got %s error, want %s", err, test.wantErr)
 			}
 		})
 	}
