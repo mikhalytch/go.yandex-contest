@@ -50,10 +50,6 @@ func IsCorrectBracketSequence(maxLength int, runeSeq []rune) (bool, error) {
 	return ctr.openAmt == 0, nil
 }
 
-type sequencesAggregator struct {
-	sequences [][]rune
-}
-
 func GenerateBracketSequences(in int, writer io.Writer) {
 	maxLength := in * 2
 	rs := make([]rune, 1)
@@ -61,7 +57,7 @@ func GenerateBracketSequences(in int, writer io.Writer) {
 	buildSequences(maxLength, maxLength-1, writer, rs)
 }
 
-var brackets = []rune{'(', ')'}
+var bracketVariants = []rune{'(', ')'}
 
 func buildSequences(maxLength int, runesLeft int, writer io.Writer, rs []rune) {
 	isCorrectSeq, err := IsCorrectBracketSequence(maxLength, rs)
@@ -74,59 +70,10 @@ func buildSequences(maxLength int, runesLeft int, writer io.Writer, rs []rune) {
 		}
 		return
 	}
-	for _, bracket := range brackets {
+	for _, bracket := range bracketVariants {
 		next := make([]rune, len(rs)+1)
 		copy(next, rs)
 		next[len(rs)] = bracket
 		buildSequences(maxLength, runesLeft-1, writer, next)
 	}
-}
-
-func newBTree(r rune, prev *bTree) bTree {
-	if prev == nil {
-		return bTree{1, r, []rune{r}, nil}
-	}
-	return prev.push(r)
-}
-
-type bTree struct {
-	lvl               uint
-	r                 rune
-	reverseRunesCache []rune
-	tail              *bTree
-}
-
-func (b *bTree) push(r rune) bTree {
-	return bTree{b.lvl + 1, r, nil, b}
-}
-
-func copyRuneSlice(in []rune) []rune {
-	return append(make([]rune, 0, len(in)), in...)
-}
-
-// todo
-//func (b *bTree) walkReverse(f func(rune)) {
-//	if b.tail != nil {
-//		b.tail.walkReverse(f)
-//	}
-//	f(b.r)
-//}
-func (b *bTree) reverseRunes() []rune {
-	//if len(b.reverseRunesCache) != 0 { // e.g. have cached result
-	//	return b.reverseRunesCache
-	//}
-	var res []rune
-	if b.tail == nil {
-		res = append(make([]rune, 0, 1), b.r)
-	} else {
-		res = append(b.tail.reverseRunes(), b.r)
-	}
-	//if b.lvl < 7 {
-	//	b.reverseRunesCache = copyRuneSlice(res)
-	//}
-	// caching
-	//if b.lvl <= 2 || b.lvl % 2 == 0 {
-	//	b.reverseRunesCache = copyRuneSlice(res)
-	//}
-	return res
 }
