@@ -55,26 +55,22 @@ type sequencesAggregator struct {
 }
 
 func GenerateBracketSequences(in int, writer io.Writer) {
-	var agg sequencesAggregator
 	maxLength := in * 2
 	rs := make([]rune, 1)
 	rs[0] = '('
-	buildSequences(maxLength, maxLength-1, &agg, rs)
-	for _, a := range agg.sequences {
-		_, _ = fmt.Fprintln(writer, string(a))
-	}
+	buildSequences(maxLength, maxLength-1, writer, rs)
 }
 
 var brackets = []rune{'(', ')'}
 
-func buildSequences(maxLength int, runesLeft int, agg *sequencesAggregator, rs []rune) {
+func buildSequences(maxLength int, runesLeft int, writer io.Writer, rs []rune) {
 	isCorrectSeq, err := IsCorrectBracketSequence(maxLength, rs)
 	if err != nil { // fail fast at any length
 		return
 	}
 	if runesLeft <= 0 {
 		if isCorrectSeq {
-			agg.sequences = append(agg.sequences, rs)
+			_, _ = fmt.Fprintln(writer, string(rs))
 		}
 		return
 	}
@@ -82,7 +78,7 @@ func buildSequences(maxLength int, runesLeft int, agg *sequencesAggregator, rs [
 		next := make([]rune, len(rs)+1)
 		copy(next, rs)
 		next[len(rs)] = bracket
-		buildSequences(maxLength, runesLeft-1, agg, next)
+		buildSequences(maxLength, runesLeft-1, writer, next)
 	}
 }
 
