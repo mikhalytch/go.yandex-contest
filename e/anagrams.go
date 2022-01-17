@@ -14,11 +14,11 @@ func main() {
 func Anagrams(reader io.Reader, writer io.Writer) {
 	scanner := bufio.NewScanner(reader)
 	if !scanner.Scan() {
-		return
+		_, _ = fmt.Fprintf(writer, "0")
 	}
 	s1 := scanner.Text()
 	if !scanner.Scan() {
-		return
+		_, _ = fmt.Fprintf(writer, "0")
 	}
 	s2 := scanner.Text()
 	if areAnagrams(s1, s2) {
