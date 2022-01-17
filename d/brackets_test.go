@@ -79,10 +79,10 @@ func BenchmarkGenerateBracketSequences(b *testing.B) {
 
 func TestIsCorrectBracketSequence(t *testing.T) {
 	tests := []struct {
-		in      string
-		maxLen  int
-		want    bool
-		wantErr error
+		in              string
+		maxLen          int
+		wantCorrectness bool
+		wantErr         error
 	}{
 		{"()", 2, true, nil},
 		{"(", 2, false, nil},
@@ -91,23 +91,11 @@ func TestIsCorrectBracketSequence(t *testing.T) {
 		{"()()", 4, true, nil},
 		{"(())", 4, true, nil},
 	}
-	newBTree := func(s string) *bTree {
-		var prev bTree
-		for _, r := range s {
-			prev = newBTree(r, &prev)
-		}
-		return &prev
-	}
-
 	for _, test := range tests {
 		t.Run(test.in, func(t *testing.T) {
-			rr, gotIsCorrect, err := IsCorrectBracketSequence(test.maxLen, newBTree(test.in))
-			gotString := string(rr)
-			if gotIsCorrect && gotString != test.in { // check in cases of correct sequences
-				t.Fatalf("Got %q string, want %q", gotString, test.in) // error generating bTree/reverseRunes
-			}
-			if gotIsCorrect != test.want {
-				t.Fatalf("Got %v sequence, want %v", gotIsCorrect, test.want)
+			gotIsCorrect, err := IsCorrectBracketSequence(test.maxLen, bytes.Runes([]byte(test.in)))
+			if gotIsCorrect != test.wantCorrectness {
+				t.Fatalf("Got %v sequence, want %v", gotIsCorrect, test.wantCorrectness)
 			}
 			if err != test.wantErr {
 				t.Fatalf("Got %s error, want %s", err, test.wantErr)

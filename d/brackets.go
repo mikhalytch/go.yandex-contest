@@ -14,7 +14,7 @@ func main() {
 		return
 	}
 	num, err := strconv.Atoi(scanner.Text())
-	if err != nil {
+	if err != nil || num > 11 || num < 0 {
 		return
 	}
 	GenerateBracketSequences(num, os.Stdout)
@@ -39,16 +39,15 @@ func (i ConstErr) Error() string {
 
 const IncorrectSeq ConstErr = "sequence is incorrect"
 
-func IsCorrectBracketSequence(maxLength int, b *bTree) ([]rune, bool, error) {
-	ctr := bracketCtr{}
-	rr := b.reverseRunes()
-	for _, r := range rr {
+func IsCorrectBracketSequence(maxLength int, rRunes []rune) (bool, error) {
+	ctr := &bracketCtr{}
+	for _, r := range rRunes {
 		ctr.register(r)
 		if ctr.openAmt < 0 || ctr.openAmt > maxLength/2 {
-			return nil, false, IncorrectSeq
+			return false, IncorrectSeq
 		}
 	}
-	return rr, ctr.openAmt == 0, nil
+	return ctr.openAmt == 0, nil
 }
 
 type sequencesAggregator struct {
@@ -67,7 +66,8 @@ func GenerateBracketSequences(in int, writer io.Writer) {
 var brackets = []rune{'(', ')'}
 
 func buildSequences(maxLength int, runesLeft int, agg *sequencesAggregator, b bTree) {
-	rr, isCorrectSeq, err := IsCorrectBracketSequence(maxLength, &b)
+	rr := b.reverseRunes()
+	isCorrectSeq, err := IsCorrectBracketSequence(maxLength, rr)
 	if err != nil { // fail fast at any length
 		return
 	}
@@ -78,7 +78,8 @@ func buildSequences(maxLength int, runesLeft int, agg *sequencesAggregator, b bT
 		return
 	}
 	for _, bracket := range brackets {
-		buildSequences(maxLength, runesLeft-1, agg, b.push(bracket))
+		nextTree := b.push(bracket)
+		buildSequences(maxLength, runesLeft-1, agg, nextTree)
 	}
 }
 
@@ -92,18 +93,16 @@ func newBTree(r rune, prev *bTree) bTree {
 type bTree struct {
 	lvl               uint
 	r                 rune
-	reverseRunesSoFar []rune
+	reverseRunesCache []rune
 	tail              *bTree
 }
 
 func (b *bTree) push(r rune) bTree {
-	var rsf []rune
-	nextLvl := b.lvl + 1
-	if nextLvl <= 5 {
-		c := append(make([]rune, 0, len(b.reverseRunesSoFar)), b.reverseRunesSoFar...)
-		rsf = append(c, r)
-	}
-	return bTree{nextLvl, r, rsf, b}
+	return bTree{b.lvl + 1, r, nil, b}
+}
+
+func copyRuneSlice(in []rune) []rune {
+	return append(make([]rune, 0, len(in)), in...)
 }
 
 // todo
@@ -114,11 +113,21 @@ func (b *bTree) push(r rune) bTree {
 //	f(b.r)
 //}
 func (b *bTree) reverseRunes() []rune {
-	if len(b.reverseRunesSoFar) != 0 { // e.g. have cached result
-		return b.reverseRunesSoFar
-	}
+	//if len(b.reverseRunesCache) != 0 { // e.g. have cached result
+	//	return b.reverseRunesCache
+	//}
+	var res []rune
 	if b.tail == nil {
-		return []rune{b.r}
+		res = append(make([]rune, 0, 1), b.r)
+	} else {
+		res = append(b.tail.reverseRunes(), b.r)
 	}
-	return append(b.tail.reverseRunes(), b.r)
+	//if b.lvl < 7 {
+	//	b.reverseRunesCache = copyRuneSlice(res)
+	//}
+	// caching
+	//if b.lvl <= 2 || b.lvl % 2 == 0 {
+	//	b.reverseRunesCache = copyRuneSlice(res)
+	//}
+	return res
 }
