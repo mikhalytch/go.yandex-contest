@@ -36,19 +36,36 @@ func TestGenerateBracketSequences(t *testing.T) {
 		}
 	})
 	t.Run("test only length", func(t *testing.T) {
-		buf := bytes.Buffer{}
-		GenerateBracketSequences(11, &buf)
-		lines := 0
-		for {
-			lines++
-			_, err := buf.ReadString('\n')
-			if err != nil {
-				break
-			}
+		tests := []struct {
+			l int
+			w int
+		}{
+			{4, 15},
+			{5, 43},
+			{6, 133},
+			{7, 430},
+			{8, 1431},
+			{9, 4863},
+			{10, 16797},
+			{11, 58787},
 		}
-		want := 58787
-		if lines != want {
-			t.Fatalf("Got %d lines, want %d", lines, want)
+		for _, test := range tests {
+			t.Run(fmt.Sprintf("len %d should give %d results", test.l, test.w), func(t *testing.T) {
+				buf := bytes.Buffer{}
+				GenerateBracketSequences(test.l, &buf)
+				lines := 0
+				for {
+					lines++
+					_, err := buf.ReadString('\n')
+					if err != nil {
+						break
+					}
+				}
+				want := test.w
+				if lines != want {
+					t.Fatalf("Got %d lines, want %d", lines, want)
+				}
+			})
 		}
 	})
 }
