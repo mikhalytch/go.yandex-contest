@@ -33,47 +33,14 @@ func Anagrams(reader io.Reader, writer io.Writer) {
 		s2 = arrays[1]
 	}
 
-	// todo #499
-	/*scanner := bufio.NewScanner(reader)
-	if !scanner.Scan() {
-		// test #498 checks this, it can be tested by printing something unexpected => results in PE error
-		_, _ = fmt.Fprintf(writer, "1")
-		return
-	} else {
-		s1 = scanner.Text()
-	}
-	if !scanner.Scan() {
-		_, _ = fmt.Fprintf(writer, "0")
-		return
-	} else {
-		s2 = scanner.Text()
-	}*/
-	if areAnagrams(s1, s2, writer) {
+	if areAnagrams(s1, s2) {
 		_, _ = fmt.Fprintf(writer, "1")
 	} else {
 		_, _ = fmt.Fprintf(writer, "0")
 	}
 }
-func areAnagrams(a, b []byte, writer io.Writer) bool {
-	// todo fixing #498/499
-	//const maxStringLength = 100000
-	//if len(a) > maxStringLength {
-	//	_, _ = fmt.Fprintf(writer, "1")
-	//	a = a[:maxStringLength]
-	//}
-	//if len(b) > maxStringLength {
-	//	_, _ = fmt.Fprintf(writer, "1")
-	//	b = b[:maxStringLength]
-	//}
-	// todo fixing #498
-	//if len(a) != len(b) {
-	//	return false
-	//}
-	dictA, dictB := createDict(a, writer), createDict(b, writer)
-	// todo fixing #499
-	//return reflect.DeepEqual(dictA, dictB)
-
-	return compareDictionaries(dictA, dictB)
+func areAnagrams(a, b []byte) bool {
+	return compareDictionaries(createDict(a), createDict(b))
 }
 func compareDictionaries(d1, d2 dict) bool {
 	return containsAll(d1, d2) && containsAll(d2, d1)
@@ -90,18 +57,10 @@ func containsAll(container, questioner dict) bool {
 	}
 	return true
 }
-func createDict(s []byte, writer io.Writer) dict {
+func createDict(s []byte) dict {
 	res := make(dict)
 	for i := 0; i < len(s); i++ {
 		res[s[i]]++
 	}
-	// todo fixing for #499
-	//for _, r := range s {
-	// todo fixing #499
-	//if utf8.RuneLen(r) != 1 {
-	//	_, _ = fmt.Fprintf(writer, "1")
-	//}
-	//res[r]++
-	//}
 	return res
 }
