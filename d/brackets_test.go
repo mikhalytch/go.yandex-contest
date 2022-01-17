@@ -75,11 +75,11 @@ func TestIsCorrectBracketSequence(t *testing.T) {
 		{"(())", 4, true, nil},
 	}
 	newBTree := func(s string) *bTree {
-		var prev *bTree
+		var prev bTree
 		for _, r := range s {
-			prev = &bTree{r, prev}
+			prev = newBTree(r, &prev)
 		}
-		return prev
+		return &prev
 	}
 
 	for _, test := range tests {

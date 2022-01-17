@@ -58,7 +58,7 @@ type sequencesAggregator struct {
 func GenerateBracketSequences(in int, writer io.Writer) {
 	var agg sequencesAggregator
 	maxLength := in * 2
-	buildSequences(maxLength, maxLength-1, &agg, bTree{'(', nil})
+	buildSequences(maxLength, maxLength-1, &agg, newBTree('(', nil))
 	for _, a := range agg.sequences {
 		_, _ = fmt.Fprintln(writer, string(a))
 	}
@@ -82,19 +82,41 @@ func buildSequences(maxLength int, runesLeft int, agg *sequencesAggregator, b bT
 	}
 }
 
-type bTree struct {
-	r    rune
-	tail *bTree
+func newBTree(r rune, prev *bTree) bTree {
+	if prev == nil {
+		return bTree{1, r, []rune{r}, nil}
+	}
+	return prev.push(r)
 }
 
-func (b *bTree) push(r rune) bTree { return bTree{r, b} }
-func (b *bTree) walkReverse(f func(rune)) {
-	if b.tail != nil {
-		b.tail.walkReverse(f)
-	}
-	f(b.r)
+type bTree struct {
+	lvl               uint
+	r                 rune
+	reverseRunesSoFar []rune
+	tail              *bTree
 }
+
+func (b *bTree) push(r rune) bTree {
+	var rsf []rune
+	nextLvl := b.lvl + 1
+	if nextLvl <= 5 {
+		c := append(make([]rune, 0, len(b.reverseRunesSoFar)), b.reverseRunesSoFar...)
+		rsf = append(c, r)
+	}
+	return bTree{nextLvl, r, rsf, b}
+}
+
+// todo
+//func (b *bTree) walkReverse(f func(rune)) {
+//	if b.tail != nil {
+//		b.tail.walkReverse(f)
+//	}
+//	f(b.r)
+//}
 func (b *bTree) reverseRunes() []rune {
+	if len(b.reverseRunesSoFar) != 0 { // e.g. have cached result
+		return b.reverseRunesSoFar
+	}
 	if b.tail == nil {
 		return []rune{b.r}
 	}
