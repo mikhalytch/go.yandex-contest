@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -14,8 +14,27 @@ func main() {
 type dict map[byte]int
 
 func Anagrams(reader io.Reader, writer io.Writer) {
-	scanner := bufio.NewScanner(reader)
-	var s1, s2 string
+	var s1, s2 []byte
+	all, err := io.ReadAll(reader)
+	if err != nil {
+		_, _ = fmt.Fprintf(writer, "1")
+		return
+	}
+	arrays := bytes.Split(all, []byte("\n"))
+
+	if len(arrays) == 1 {
+		_, _ = fmt.Fprintf(writer, "0")
+		return
+	} else if len(arrays) == 0 {
+		_, _ = fmt.Fprintf(writer, "1")
+		return
+	} else {
+		s1 = arrays[0]
+		s2 = arrays[1]
+	}
+
+	// todo #499
+	/*scanner := bufio.NewScanner(reader)
 	if !scanner.Scan() {
 		// test #498 checks this, it can be tested by printing something unexpected => results in PE error
 		_, _ = fmt.Fprintf(writer, "1")
@@ -28,14 +47,14 @@ func Anagrams(reader io.Reader, writer io.Writer) {
 		return
 	} else {
 		s2 = scanner.Text()
-	}
+	}*/
 	if areAnagrams(s1, s2, writer) {
 		_, _ = fmt.Fprintf(writer, "1")
 	} else {
 		_, _ = fmt.Fprintf(writer, "0")
 	}
 }
-func areAnagrams(a, b string, writer io.Writer) bool {
+func areAnagrams(a, b []byte, writer io.Writer) bool {
 	// todo fixing #498/499
 	//const maxStringLength = 100000
 	//if len(a) > maxStringLength {
@@ -71,7 +90,7 @@ func containsAll(container, questioner dict) bool {
 	}
 	return true
 }
-func createDict(s string, writer io.Writer) dict {
+func createDict(s []byte, writer io.Writer) dict {
 	res := make(dict)
 	for i := 0; i < len(s); i++ {
 		res[s[i]]++
