@@ -20,7 +20,8 @@ func Anagrams(reader io.Reader, writer io.Writer) {
 		s1 = scanner.Text()
 	}
 	if !scanner.Scan() {
-		s2 = ""
+		_, _ = fmt.Fprintf(writer, "0")
+		return
 	} else {
 		s2 = scanner.Text()
 	}
@@ -31,7 +32,11 @@ func Anagrams(reader io.Reader, writer io.Writer) {
 	}
 }
 func areAnagrams(a, b string) bool {
-	return reflect.DeepEqual(createDict(a), createDict(b))
+	if len(a) != len(b) {
+		return false
+	}
+	dictA, dictB := createDict(a), createDict(b)
+	return reflect.DeepEqual(dictA, dictB)
 }
 func createDict(s string) map[rune]int {
 	res := make(map[rune]int)
