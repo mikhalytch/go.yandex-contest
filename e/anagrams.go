@@ -15,13 +15,17 @@ func Anagrams(reader io.Reader, writer io.Writer) {
 	scanner := bufio.NewScanner(reader)
 	var s1, s2 string
 	if !scanner.Scan() {
-		_, _ = fmt.Fprintf(writer, "0")
+		_, _ = fmt.Fprintf(writer, "1")
 		return
 	} else {
 		s1 = scanner.Text()
 	}
 	if !scanner.Scan() {
-		_, _ = fmt.Fprintf(writer, "0")
+		if len(s1) == 0 {
+			_, _ = fmt.Fprintf(writer, "1")
+		} else {
+			_, _ = fmt.Fprintf(writer, "0")
+		}
 		return
 	} else {
 		s2 = scanner.Text()
