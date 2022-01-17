@@ -36,6 +36,8 @@ func CalcTravel(in *TravelInput) int {
 }
 
 func Travel(reader io.Reader, writer io.Writer) {
+	// todo uncomment after CalcTravel implementation
+	//_, _ = fmt.Fprintf(writer, "%d", CalcTravel(ReadInput(reader)))
 }
 
 func ReadInput(reader io.Reader) *TravelInput {
@@ -75,4 +77,14 @@ func ReadInput(reader io.Reader) *TravelInput {
 		}
 	}
 	return result
+}
+
+func Distance(a, b Coordinates) int {
+	return intAbs(a.X-b.X) + intAbs(a.Y-b.Y)
+}
+func intAbs(a int) int {
+	if a < 0 {
+		return -a
+	}
+	return a
 }
