@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 )
 
 func main() {
@@ -40,22 +41,7 @@ func Anagrams(reader io.Reader, writer io.Writer) {
 	}
 }
 func areAnagrams(a, b []byte) bool {
-	return compareDictionaries(createDict(a), createDict(b))
-}
-func compareDictionaries(d1, d2 dict) bool {
-	return containsAll(d1, d2) && containsAll(d2, d1)
-}
-func containsAll(container, questioner dict) bool {
-	for qk, qv := range questioner {
-		if cv, cok := container[qk]; !cok {
-			return false
-		} else {
-			if cv != qv {
-				return false
-			}
-		}
-	}
-	return true
+	return reflect.DeepEqual(createDict(a), createDict(b))
 }
 func createDict(s []byte) dict {
 	res := make(dict)
