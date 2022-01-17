@@ -15,7 +15,8 @@ func Anagrams(reader io.Reader, writer io.Writer) {
 	scanner := bufio.NewScanner(reader)
 	var s1, s2 string
 	if !scanner.Scan() {
-		s1 = ""
+		_, _ = fmt.Fprintf(writer, "0")
+		return
 	} else {
 		s1 = scanner.Text()
 	}
@@ -32,6 +33,12 @@ func Anagrams(reader io.Reader, writer io.Writer) {
 	}
 }
 func areAnagrams(a, b string) bool {
+	if len(a) > 100000 {
+		a = a[:100000]
+	}
+	if len(b) > 100000 {
+		b = b[:100000]
+	}
 	if len(a) != len(b) {
 		return false
 	}
