@@ -22,7 +22,7 @@ func Anagrams(reader io.Reader, writer io.Writer) {
 		s1 = scanner.Text()
 	}
 	if !scanner.Scan() {
-		_, _ = fmt.Fprintf(writer, "0")
+		_, _ = fmt.Fprintf(writer, "1")
 		return
 	} else {
 		s2 = scanner.Text()
