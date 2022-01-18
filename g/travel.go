@@ -41,24 +41,8 @@ func (td *TravelInput) cityByNum(n int) (CityCoordinates, bool) {
 	return td.Cities[n-1], true
 }
 
-type TravelHistory struct {
-	prev    map[int]bool
-	current int
-}
-
-func (t *TravelHistory) contains(s int) bool { _, ok := t.prev[s]; return ok }
-
-type CityCoordinates struct {
-	X int
-	Y int
-}
-
-func (cc CityCoordinates) distanceTo(a CityCoordinates) int {
-	return Distance(cc, a)
-}
-
-// TravelStepByStep returns travel length on result found, -1 on no result
-func TravelStepByStep(td *TravelInput) int {
+// TravelLength returns travel length on result found, -1 on no result
+func (td *TravelInput) TravelLength() int {
 	_, ok := td.cityByNum(td.RouteStart)
 	if !ok {
 		return -1
@@ -73,21 +57,14 @@ func TravelStepByStep(td *TravelInput) int {
 		var nextStepPreparation []TravelHistory
 		for _, curStepNode := range curStepNodes {
 			reachableMoves := td.ReachableMoves(curStepNode.current)
-			for mIdx, move := range reachableMoves {
+			for _, move := range reachableMoves {
 				if move == td.RouteFinish {
 					return tLength + 1
 				}
 				if curStepNode.contains(move) {
 					continue
 				}
-				var p map[int]bool
-				if mIdx == len(reachableMoves)-1 { // reuse for last
-					p = curStepNode.prev
-				} else {
-					p = copyMap(curStepNode.prev)
-				}
-				p[move] = true
-				nextStepPreparation = append(nextStepPreparation, TravelHistory{p, move})
+				nextStepPreparation = append(nextStepPreparation, curStepNode.push(move))
 			}
 		}
 		curStepNodes = nextStepPreparation
@@ -95,11 +72,41 @@ func TravelStepByStep(td *TravelInput) int {
 	return -1 // nothing found
 }
 
+type TravelHistory struct {
+	prev    map[int]bool
+	current int
+}
+
+func (t *TravelHistory) contains(s int) bool { _, ok := t.prev[s]; return ok }
+
+func (t *TravelHistory) push(move int) TravelHistory {
+	copyMap := func(s map[int]bool) map[int]bool {
+		r := make(map[int]bool)
+		for k, v := range s {
+			r[k] = v
+		}
+		return r
+	}
+	p := copyMap(t.prev)
+	p[move] = true
+	addition := TravelHistory{p, move}
+	return addition
+}
+
+type CityCoordinates struct {
+	X int
+	Y int
+}
+
+func (cc CityCoordinates) distanceTo(a CityCoordinates) int {
+	return Distance(cc, a)
+}
+
 func CalcTravel(in *TravelInput) int {
 	if in == nil {
 		return -1
 	}
-	return TravelStepByStep(in)
+	return in.TravelLength()
 }
 
 func Travel(reader io.Reader, writer io.Writer) {
@@ -154,11 +161,4 @@ func intAbs(a int) int {
 		return -a
 	}
 	return a
-}
-func copyMap(s map[int]bool) map[int]bool {
-	r := make(map[int]bool)
-	for k, v := range s {
-		r[k] = v
-	}
-	return r
 }
