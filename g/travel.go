@@ -16,25 +16,25 @@ func main() {
 type TravelInput struct {
 	Cities         []CityCoordinates
 	MaxUnRefuelled int
-	RouteStart     int
-	RouteFinish    int
+	RouteStart     uint16
+	RouteFinish    uint16
 }
 
-func (td *TravelInput) isExist(i int) bool { return i > 0 && i <= len(td.Cities) }
-func (td *TravelInput) ReachableMoves(from int) []int {
+func (td *TravelInput) isExist(i uint16) bool { return i > 0 && i <= uint16(len(td.Cities)) }
+func (td *TravelInput) ReachableMoves(from uint16) []uint16 {
 	if !td.isExist(from) {
 		return nil
 	}
 	f := td.Cities[from-1]
-	var res []int
+	var res []uint16
 	for idx, c := range td.Cities {
-		if idx != from-1 && c.distanceTo(f) <= td.MaxUnRefuelled {
-			res = append(res, idx+1)
+		if uint16(idx) != from-1 && c.distanceTo(f) <= td.MaxUnRefuelled {
+			res = append(res, uint16(idx+1))
 		}
 	}
 	return res
 }
-func (td *TravelInput) cityByNum(n int) (CityCoordinates, bool) {
+func (td *TravelInput) cityByNum(n uint16) (CityCoordinates, bool) {
 	if !td.isExist(n) {
 		return CityCoordinates{}, false
 	}
@@ -51,7 +51,6 @@ func (td *TravelInput) TravelLength() int {
 	if !ok {
 		return -1
 	}
-	// contains all correct numbers
 	curStepNodes := []TravelHistory{{nil, td.RouteStart}}
 	for tLength := 0; len(curStepNodes) != 0; tLength++ {
 		var nextStepPreparation []TravelHistory
@@ -74,10 +73,10 @@ func (td *TravelInput) TravelLength() int {
 
 type TravelHistory struct {
 	prev    *TravelHistory
-	current int
+	current uint16
 }
 
-func (t *TravelHistory) contains(s int) bool {
+func (t *TravelHistory) contains(s uint16) bool {
 	if t.current == s {
 		return true
 	}
@@ -87,13 +86,13 @@ func (t *TravelHistory) contains(s int) bool {
 	return t.prev.contains(s)
 }
 
-func (t *TravelHistory) push(move int) TravelHistory {
+func (t *TravelHistory) push(move uint16) TravelHistory {
 	return TravelHistory{t, move}
 }
 
 type CityCoordinates struct {
-	X int
-	Y int
+	X int32
+	Y int32
 }
 
 func (cc CityCoordinates) distanceTo(a CityCoordinates) int {
@@ -110,7 +109,6 @@ func CalcTravel(in *TravelInput) int {
 func Travel(reader io.Reader, writer io.Writer) {
 	_, _ = fmt.Fprintf(writer, "%d", CalcTravel(ReadInput(reader)))
 }
-
 func ReadInput(reader io.Reader) *TravelInput {
 	scanner := bufio.NewScanner(reader)
 	result := &TravelInput{}
@@ -124,7 +122,7 @@ func ReadInput(reader io.Reader) *TravelInput {
 			}
 			cAmt = num
 		} else if lineIdx <= cAmt {
-			var x, y int
+			var x, y int32
 			scanned, err := fmt.Fscanf(strings.NewReader(lineText), "%d %d", &x, &y)
 			if err != nil || scanned != 2 {
 				return nil
@@ -137,7 +135,7 @@ func ReadInput(reader io.Reader) *TravelInput {
 			}
 			result.MaxUnRefuelled = num
 		} else if lineIdx == cAmt+2 {
-			var s, e int
+			var s, e uint16
 			scanned, err := fmt.Fscanf(strings.NewReader(lineText), "%d %d", &s, &e)
 			if err != nil || scanned != 2 {
 				return nil
@@ -153,10 +151,10 @@ func ReadInput(reader io.Reader) *TravelInput {
 
 func Distance(a, b CityCoordinates) int {
 	return intAbs(a.X-b.X) + intAbs(a.Y-b.Y)
-}
-func intAbs(a int) int {
+} /*todo conv*/
+func intAbs(a int32) int {
 	if a < 0 {
-		return -a
+		return int(-a)
 	}
-	return a
+	return int(a)
 }
