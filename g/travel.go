@@ -114,8 +114,7 @@ func CalcTravel(in *TravelInput) int {
 }
 
 func Travel(reader io.Reader, writer io.Writer) {
-	// todo uncomment after CalcTravel implementation
-	//_, _ = fmt.Fprintf(writer, "%d", CalcTravel(ReadInput(reader)))
+	_, _ = fmt.Fprintf(writer, "%d", CalcTravel(ReadInput(reader)))
 }
 
 func ReadInput(reader io.Reader) *TravelInput {
