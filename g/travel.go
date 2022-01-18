@@ -22,9 +22,10 @@ type TravelInput struct {
 
 func (td *TravelInput) isExist(i uint16) bool { return i > 0 && i <= uint16(len(td.Cities)) }
 func (td *TravelInput) ReachableMoves(from uint16) []uint16 {
-	if !td.isExist(from) {
-		return nil
-	}
+	// todo fixing #21
+	//if !td.isExist(from) {
+	//	return nil
+	//}
 	f := td.Cities[from-1]
 	var res []uint16
 	for idx, c := range td.Cities {
@@ -34,21 +35,25 @@ func (td *TravelInput) ReachableMoves(from uint16) []uint16 {
 	}
 	return res
 }
-func (td *TravelInput) cityByNum(n uint16) (CityCoordinates, bool) {
-	if !td.isExist(n) {
-		return CityCoordinates{}, false
-	}
-	return td.Cities[n-1], true
-}
+
+// todo fixing #21
+//func (td *TravelInput) cityByNum(n uint16) (CityCoordinates, bool) {
+//	if !td.isExist(n) {
+//		return CityCoordinates{}, false
+//	}
+//	return td.Cities[n-1], true
+//}
 
 // TravelLength returns travel length on result found, -1 on no result
 func (td *TravelInput) TravelLength() int {
-	_, ok := td.cityByNum(td.RouteStart)
-	if !ok {
+	return td.TravelLengthStepped()
+}
+
+func (td *TravelInput) TravelLengthStepped() int {
+	if !td.isExist(td.RouteStart) {
 		return -1
 	}
-	_, ok = td.cityByNum(td.RouteFinish)
-	if !ok {
+	if !td.isExist(td.RouteFinish) {
 		return -1
 	}
 	curStepNodes := []TravelHistory{{nil, td.RouteStart}}
@@ -151,7 +156,7 @@ func ReadInput(reader io.Reader) *TravelInput {
 
 func Distance(a, b CityCoordinates) int {
 	return intAbs(a.X-b.X) + intAbs(a.Y-b.Y)
-} /*todo conv*/
+}
 func intAbs(a int32) int {
 	if a < 0 {
 		return int(-a)
