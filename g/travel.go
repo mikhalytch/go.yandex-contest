@@ -89,14 +89,19 @@ func TravelStepByStep(td *TravelDesc) int {
 		var nextStepPreparation []TravelHistory
 		for _, curStepNode := range curStepNodes {
 			reachableMoves := td.ReachableMoves(curStepNode.current)
-			for _, move := range reachableMoves {
+			for mIdx, move := range reachableMoves {
 				if move == td.RouteFinish {
 					return tLength + 1
 				}
 				if curStepNode.contains(move) {
 					continue
 				}
-				p := copyMap(curStepNode.prev)
+				var p map[int]bool
+				if mIdx == len(reachableMoves)-1 { // reuse for last
+					p = curStepNode.prev
+				} else {
+					p = copyMap(curStepNode.prev)
+				}
 				p[move] = true
 				nextStepPreparation = append(nextStepPreparation, TravelHistory{p, move})
 			}
