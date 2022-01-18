@@ -52,7 +52,7 @@ func (td *TravelInput) TravelLength() int {
 		return -1
 	}
 	// contains all correct numbers
-	curStepNodes := []TravelHistory{{map[int]bool{}, td.RouteStart}}
+	curStepNodes := []TravelHistory{{[]int{}, td.RouteStart}}
 	for tLength := 0; len(curStepNodes) != 0; tLength++ {
 		var nextStepPreparation []TravelHistory
 		for _, curStepNode := range curStepNodes {
@@ -73,24 +73,22 @@ func (td *TravelInput) TravelLength() int {
 }
 
 type TravelHistory struct {
-	prev    map[int]bool
+	prev    []int
 	current int
 }
 
-func (t *TravelHistory) contains(s int) bool { _, ok := t.prev[s]; return ok }
+func (t *TravelHistory) contains(s int) bool {
+	for _, p := range t.prev {
+		if s == p {
+			return true
+		}
+	}
+	return false
+}
 
 func (t *TravelHistory) push(move int) TravelHistory {
-	copyMap := func(s map[int]bool) map[int]bool {
-		r := make(map[int]bool)
-		for k, v := range s {
-			r[k] = v
-		}
-		return r
-	}
-	p := copyMap(t.prev)
-	p[move] = true
-	addition := TravelHistory{p, move}
-	return addition
+	p := append(append(make([]int, len(t.prev), len(t.prev)+1), t.prev...), move)
+	return TravelHistory{p, move}
 }
 
 type CityCoordinates struct {
