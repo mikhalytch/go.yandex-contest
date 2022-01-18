@@ -36,57 +36,66 @@ const (
 2 2
 1
 1 4`
-	a3 = -1
+	a3        = -1
+	incorrect = `-1
+2 5
+3
+1 1`
+	ai = -1
+)
+
+var (
+	ti1 = TravelInput{
+		Cities: []CityCoordinates{
+			{X: 0, Y: 0},
+			{0, 2},
+			{2, 2},
+			{0, -2},
+			{2, -2},
+			{2, -1},
+			{2, 1},
+		},
+		MaxUnRefuelled: 2,
+		RouteStart:     1,
+		RouteFinish:    3,
+	}
+	ti2 = TravelInput{
+		[]CityCoordinates{
+			{0, 0},
+			{1, 0},
+			{0, 1},
+			{1, 1},
+		},
+		2,
+		1,
+		4,
+	}
+	ti3 = TravelInput{
+		[]CityCoordinates{
+			{0, 0},
+			{2, 0},
+			{0, 2},
+			{2, 2},
+		},
+		1,
+		1,
+		4,
+	}
 )
 
 func TestReadInput(t *testing.T) {
 	tests := []struct {
 		in   string
-		want TravelInput
+		want *TravelInput
 	}{
-		{ex1, TravelInput{
-			CitiesAmt: 7,
-			Cities: []City{
-				{Num: 1, Coord: Coordinates{X: 0, Y: 0}},
-				{Num: 2, Coord: Coordinates{0, 2}},
-				{Num: 3, Coord: Coordinates{2, 2}},
-				{Num: 4, Coord: Coordinates{0, -2}},
-				{Num: 5, Coord: Coordinates{2, -2}},
-				{Num: 6, Coord: Coordinates{2, -1}},
-				{Num: 7, Coord: Coordinates{2, 1}},
-			},
-			MaxUnRefuelled: 2,
-			RouteStart:     1,
-			RouteFinish:    3,
-		}},
-		{ex2, TravelInput{
-			4,
-			[]City{
-				{1, Coordinates{0, 0}},
-				{2, Coordinates{1, 0}},
-				{3, Coordinates{0, 1}},
-				{4, Coordinates{1, 1}},
-			},
-			2,
-			1,
-			4,
-		}},
-		{ex3, TravelInput{
-			4,
-			[]City{
-				{1, Coordinates{0, 0}},
-				{2, Coordinates{2, 0}},
-				{3, Coordinates{0, 2}},
-				{4, Coordinates{2, 2}},
-			},
-			1,
-			1,
-			4,
-		}},
+		{ex1, &ti1},
+		{ex2, &ti2},
+		{ex3, &ti3},
+		{incorrect, nil},
 	}
 	for idx, test := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			got := *ReadInput(strings.NewReader(test.in))
+			got := ReadInput(strings.NewReader(test.in))
 			want := test.want
 			if !reflect.DeepEqual(got, want) {
 				t.Fatalf("Got %#v travel input, want %#v", got, want)
@@ -103,6 +112,7 @@ func TestCalcTravel(t *testing.T) {
 		{ReadInput(strings.NewReader(ex1)), a1},
 		{ReadInput(strings.NewReader(ex2)), a2},
 		{ReadInput(strings.NewReader(ex3)), a3},
+		{ReadInput(strings.NewReader(incorrect)), ai},
 	}
 	for idx, test := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
@@ -123,6 +133,7 @@ func TestTravel(t *testing.T) {
 		{ex1, fmt.Sprintf("%d", a1)},
 		{ex2, fmt.Sprintf("%d", a2)},
 		{ex3, fmt.Sprintf("%d", a3)},
+		{incorrect, fmt.Sprintf("%d", ai)},
 	}
 	for idx, test := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
@@ -139,16 +150,37 @@ func TestTravel(t *testing.T) {
 
 func TestDistance(t *testing.T) {
 	tests := []struct {
-		a, b Coordinates
+		a, b CityCoordinates
 		want int
 	}{
-		{Coordinates{0, 0}, Coordinates{2, 0}, 2},
-		{Coordinates{0, 2}, Coordinates{2, 2}, 2},
+		{CityCoordinates{0, 0}, CityCoordinates{2, 0}, 2},
+		{CityCoordinates{0, 2}, CityCoordinates{2, 2}, 2},
+		{CityCoordinates{0, 2}, CityCoordinates{0, 2}, 0},
 	}
 	for idx, test := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
 			assertDistance(t, Distance(test.a, test.b), test.want)
 			assertDistance(t, Distance(test.b, test.a), test.want)
+		})
+	}
+}
+
+func TestFirstAvailableMoves(t *testing.T) {
+	tests := []struct {
+		ti   TravelInput
+		want []int
+	}{
+		{ti1, []int{2, 4}},
+		{ti2, []int{2, 3, 4}},
+		{ti3, nil},
+	}
+	for idx, test := range tests {
+		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+			got := test.ti.CreateTravelDesc().AvailableMoves(test.ti.RouteStart)
+			want := test.want
+			if !reflect.DeepEqual(got, want) {
+				t.Fatalf("Got %v available, want %v", got, want)
+			}
 		})
 	}
 }

@@ -13,22 +13,53 @@ func main() {
 	Travel(os.Stdin, os.Stdout)
 }
 
-type City struct {
-	Num   int
-	Coord Coordinates
-}
-
 type TravelInput struct {
-	CitiesAmt      int
-	Cities         []City
+	Cities         []CityCoordinates
 	MaxUnRefuelled int
 	RouteStart     int
 	RouteFinish    int
 }
 
-type Coordinates struct {
+func (ti *TravelInput) CreateTravelDesc() TravelDesc {
+	return NewTravelDesc(ti)
+}
+
+func NewTravelDesc(ti *TravelInput) TravelDesc {
+	c := make(map[int]CityCoordinates)
+	for idx, city := range ti.Cities {
+		c[idx+1] = city
+	}
+	return TravelDesc{c, ti.MaxUnRefuelled, ti.RouteStart, ti.RouteFinish}
+}
+
+type TravelDesc struct {
+	Cities         map[int]CityCoordinates
+	MaxUnRefuelled int
+	RouteStart     int
+	RouteFinish    int
+}
+
+func (ti TravelDesc) AvailableMoves(from int) []int {
+	f, ok := ti.Cities[from]
+	if !ok {
+		return nil
+	}
+	var res []int
+	for n, c := range ti.Cities {
+		if n != from && c.distanceTo(f) <= ti.MaxUnRefuelled {
+			res = append(res, n)
+		}
+	}
+	return res
+}
+
+type CityCoordinates struct {
 	X int
 	Y int
+}
+
+func (cc CityCoordinates) distanceTo(a CityCoordinates) int {
+	return Distance(cc, a)
 }
 
 func CalcTravel(in *TravelInput) int {
@@ -43,28 +74,29 @@ func Travel(reader io.Reader, writer io.Writer) {
 func ReadInput(reader io.Reader) *TravelInput {
 	scanner := bufio.NewScanner(reader)
 	result := &TravelInput{}
+	var cAmt int
 	for lineIdx := 0; scanner.Scan(); lineIdx++ {
 		lineText := scanner.Text()
 		if lineIdx == 0 {
 			num, err := strconv.Atoi(lineText)
-			if err != nil {
+			if err != nil || num <= 0 {
 				return nil
 			}
-			result.CitiesAmt = num
-		} else if lineIdx <= result.CitiesAmt {
+			cAmt = num
+		} else if lineIdx <= cAmt {
 			var x, y int
 			scanned, err := fmt.Fscanf(strings.NewReader(lineText), "%d %d", &x, &y)
 			if err != nil || scanned != 2 {
 				return nil
 			}
-			result.Cities = append(result.Cities, City{lineIdx, Coordinates{x, y}})
-		} else if lineIdx == result.CitiesAmt+1 {
+			result.Cities = append(result.Cities, CityCoordinates{x, y})
+		} else if lineIdx == cAmt+1 {
 			num, err := strconv.Atoi(lineText)
 			if err != nil {
 				return nil
 			}
 			result.MaxUnRefuelled = num
-		} else if lineIdx == result.CitiesAmt+2 {
+		} else if lineIdx == cAmt+2 {
 			var s, e int
 			scanned, err := fmt.Fscanf(strings.NewReader(lineText), "%d %d", &s, &e)
 			if err != nil || scanned != 2 {
@@ -79,7 +111,7 @@ func ReadInput(reader io.Reader) *TravelInput {
 	return result
 }
 
-func Distance(a, b Coordinates) int {
+func Distance(a, b CityCoordinates) int {
 	return intAbs(a.X-b.X) + intAbs(a.Y-b.Y)
 }
 func intAbs(a int) int {
