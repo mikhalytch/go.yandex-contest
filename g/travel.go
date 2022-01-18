@@ -20,41 +20,25 @@ type TravelInput struct {
 	RouteFinish    int
 }
 
-func (ti *TravelInput) CreateTravelDesc() *TravelDesc {
-	return NewTravelDesc(ti)
-}
-
-func NewTravelDesc(ti *TravelInput) *TravelDesc {
-	c := make(map[int]CityCoordinates)
-	for idx, city := range ti.Cities {
-		c[idx+1] = city
-	}
-	return &TravelDesc{c, ti.MaxUnRefuelled, ti.RouteStart, ti.RouteFinish}
-}
-
-type TravelDesc struct {
-	Cities         map[int]CityCoordinates
-	MaxUnRefuelled int
-	RouteStart     int
-	RouteFinish    int
-}
-
-func (td *TravelDesc) ReachableMoves(from int) []int {
-	f, ok := td.Cities[from]
-	if !ok {
+func (td *TravelInput) isExist(i int) bool { return i > 0 && i <= len(td.Cities) }
+func (td *TravelInput) ReachableMoves(from int) []int {
+	if !td.isExist(from) {
 		return nil
 	}
+	f := td.Cities[from-1]
 	var res []int
-	for n, c := range td.Cities {
-		if n != from && c.distanceTo(f) <= td.MaxUnRefuelled {
-			res = append(res, n)
+	for idx, c := range td.Cities {
+		if idx != from-1 && c.distanceTo(f) <= td.MaxUnRefuelled {
+			res = append(res, idx+1)
 		}
 	}
 	return res
 }
-func (td *TravelDesc) cityByNum(n int) (CityCoordinates, bool) {
-	coordinates, ok := td.Cities[n]
-	return coordinates, ok
+func (td *TravelInput) cityByNum(n int) (CityCoordinates, bool) {
+	if !td.isExist(n) {
+		return CityCoordinates{}, false
+	}
+	return td.Cities[n-1], true
 }
 
 type TravelHistory struct {
@@ -74,7 +58,7 @@ func (cc CityCoordinates) distanceTo(a CityCoordinates) int {
 }
 
 // TravelStepByStep returns travel length on result found, -1 on no result
-func TravelStepByStep(td *TravelDesc) int {
+func TravelStepByStep(td *TravelInput) int {
 	_, ok := td.cityByNum(td.RouteStart)
 	if !ok {
 		return -1
@@ -115,7 +99,7 @@ func CalcTravel(in *TravelInput) int {
 	if in == nil {
 		return -1
 	}
-	return TravelStepByStep(in.CreateTravelDesc())
+	return TravelStepByStep(in)
 }
 
 func Travel(reader io.Reader, writer io.Writer) {

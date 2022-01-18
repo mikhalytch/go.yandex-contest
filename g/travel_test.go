@@ -177,7 +177,7 @@ func TestFirstCityReachableMoves(t *testing.T) {
 	}
 	for idx, test := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			got := test.ti.CreateTravelDesc().ReachableMoves(test.ti.RouteStart)
+			got := test.ti.ReachableMoves(test.ti.RouteStart)
 			sort.Ints(got)
 			want := test.want
 			if !reflect.DeepEqual(got, want) {
