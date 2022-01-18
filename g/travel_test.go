@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -165,7 +166,7 @@ func TestDistance(t *testing.T) {
 	}
 }
 
-func TestFirstAvailableMoves(t *testing.T) {
+func TestFirstCityReachableMoves(t *testing.T) {
 	tests := []struct {
 		ti   TravelInput
 		want []int
@@ -176,7 +177,8 @@ func TestFirstAvailableMoves(t *testing.T) {
 	}
 	for idx, test := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			got := test.ti.CreateTravelDesc().AvailableMoves(test.ti.RouteStart)
+			got := test.ti.CreateTravelDesc().ReachableMoves(test.ti.RouteStart)
+			sort.Ints(got)
 			want := test.want
 			if !reflect.DeepEqual(got, want) {
 				t.Fatalf("Got %v available, want %v", got, want)

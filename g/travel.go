@@ -20,16 +20,16 @@ type TravelInput struct {
 	RouteFinish    int
 }
 
-func (ti *TravelInput) CreateTravelDesc() TravelDesc {
+func (ti *TravelInput) CreateTravelDesc() *TravelDesc {
 	return NewTravelDesc(ti)
 }
 
-func NewTravelDesc(ti *TravelInput) TravelDesc {
+func NewTravelDesc(ti *TravelInput) *TravelDesc {
 	c := make(map[int]CityCoordinates)
 	for idx, city := range ti.Cities {
 		c[idx+1] = city
 	}
-	return TravelDesc{c, ti.MaxUnRefuelled, ti.RouteStart, ti.RouteFinish}
+	return &TravelDesc{c, ti.MaxUnRefuelled, ti.RouteStart, ti.RouteFinish}
 }
 
 type TravelDesc struct {
@@ -39,19 +39,30 @@ type TravelDesc struct {
 	RouteFinish    int
 }
 
-func (ti TravelDesc) AvailableMoves(from int) []int {
-	f, ok := ti.Cities[from]
+func (td *TravelDesc) ReachableMoves(from int) []int {
+	f, ok := td.Cities[from]
 	if !ok {
 		return nil
 	}
 	var res []int
-	for n, c := range ti.Cities {
-		if n != from && c.distanceTo(f) <= ti.MaxUnRefuelled {
+	for n, c := range td.Cities {
+		if n != from && c.distanceTo(f) <= td.MaxUnRefuelled {
 			res = append(res, n)
 		}
 	}
 	return res
 }
+func (td *TravelDesc) cityByNum(n int) (CityCoordinates, bool) {
+	coordinates, ok := td.Cities[n]
+	return coordinates, ok
+}
+
+type TravelHistory struct {
+	prev    map[int]bool
+	current int
+}
+
+func (t *TravelHistory) contains(s int) bool { _, ok := t.prev[s]; return ok }
 
 type CityCoordinates struct {
 	X int
@@ -62,8 +73,44 @@ func (cc CityCoordinates) distanceTo(a CityCoordinates) int {
 	return Distance(cc, a)
 }
 
+// TravelStepByStep returns travel length on result found, -1 on no result
+func TravelStepByStep(td *TravelDesc) int {
+	_, ok := td.cityByNum(td.RouteStart)
+	if !ok {
+		return -1
+	}
+	_, ok = td.cityByNum(td.RouteFinish)
+	if !ok {
+		return -1
+	}
+	// contains all correct numbers
+	curStepNodes := []TravelHistory{{map[int]bool{}, td.RouteStart}}
+	for tLength := 0; len(curStepNodes) != 0; tLength++ {
+		var nextStepPreparation []TravelHistory
+		for _, curStepNode := range curStepNodes {
+			reachableMoves := td.ReachableMoves(curStepNode.current)
+			for _, move := range reachableMoves {
+				if move == td.RouteFinish {
+					return tLength + 1
+				}
+				if curStepNode.contains(move) {
+					continue
+				}
+				p := copyMap(curStepNode.prev)
+				p[move] = true
+				nextStepPreparation = append(nextStepPreparation, TravelHistory{p, move})
+			}
+		}
+		curStepNodes = nextStepPreparation
+	}
+	return -1 // nothing found
+}
+
 func CalcTravel(in *TravelInput) int {
-	return 0
+	if in == nil {
+		return -1
+	}
+	return TravelStepByStep(in.CreateTravelDesc())
 }
 
 func Travel(reader io.Reader, writer io.Writer) {
@@ -119,4 +166,11 @@ func intAbs(a int) int {
 		return -a
 	}
 	return a
+}
+func copyMap(s map[int]bool) map[int]bool {
+	r := make(map[int]bool)
+	for k, v := range s {
+		r[k] = v
+	}
+	return r
 }
