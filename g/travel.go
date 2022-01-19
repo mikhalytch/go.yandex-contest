@@ -142,6 +142,9 @@ func CalcTravel(in *TravelInput, recursiveCalc bool) int {
 	if !in.isExist(in.RouteFinish) {
 		return -1
 	}
+	if in.RouteStart == in.RouteFinish {
+		return 0
+	}
 	switch recursiveCalc {
 	case true:
 		return in.TravelLengthRecursive()
