@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // even 100 is enough to have test #17 depth-first (fails on recursive); test #21 has 1000 cities
@@ -59,15 +60,18 @@ func (td *TravelInput) isCityReachable(c CityCoordinates, fromCity CityCoordinat
 //}
 
 func NewMinAgg(td *TravelInput) *MinAgg {
-	return &MinAgg{uint16(len(td.Cities) - 1), false}
+	return &MinAgg{uint16(len(td.Cities) - 1), false, sync.Mutex{}}
 }
 
 type MinAgg struct {
 	knownMinLength uint16
 	set            bool
+	mu             sync.Mutex
 }
 
 func (a *MinAgg) registerCandidate(length uint16) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 	if a.knownMinLength > length {
 		a.knownMinLength = length
 		a.set = true
@@ -82,10 +86,11 @@ func (a *MinAgg) getResult() int {
 
 func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) int {
 	ma := NewMinAgg(td)
-	td.recTravel(ma, initial, 0)
+	wg := &sync.WaitGroup{}
+	td.recTravel(ma, initial, 0, wg, false)
 	return ma.getResult()
 }
-func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen uint16) {
+func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen uint16, wg *sync.WaitGroup, doDone bool) {
 	nextLen := curLen + 1
 	if nextLen > ma.knownMinLength {
 		return
@@ -95,7 +100,10 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen uint16) {
 			ma.registerCandidate(nextLen)
 			break
 		}
-		td.recTravel(ma, th.push(move), nextLen)
+		td.recTravel(ma, th.push(move), nextLen, wg, false)
+	}
+	if doDone {
+		wg.Done()
 	}
 }
 func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
@@ -103,6 +111,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 	// --- rec case
 	usingRecursion := false
 	ma := NewMinAgg(td)
+	wg := &sync.WaitGroup{}
 	// --- rec case: END
 	treeWidthNodes := []TravelHistory{*initial}
 	for tLength := 0; len(treeWidthNodes) != 0; tLength++ {
@@ -125,7 +134,8 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 						ma.registerCandidate(nextLen)
 						break
 					}
-					td.recTravel(ma, curStepNode.push(move), nextLen)
+					wg.Add(1)
+					go td.recTravel(ma, curStepNode.push(move), nextLen, wg, true)
 				}
 			} else {
 				for _, move := range moves {
@@ -137,6 +147,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 			}
 		}
 		if usingRecursion {
+			wg.Wait()
 			return ma.getResult()
 		} else {
 			treeWidthNodes = nextTreeLevelWidthNodes
