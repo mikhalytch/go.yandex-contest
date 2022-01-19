@@ -143,16 +143,12 @@ func TestTravel(t *testing.T) {
 	}
 	for idx, test := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			for _, r := range recursive {
-				t.Run(fmt.Sprintf("recursive:%v", r), func(t *testing.T) {
-					buffer := bytes.Buffer{}
-					Travel(strings.NewReader(test.in), &buffer, r)
-					got := buffer.String()
-					want := test.out
-					if got != want {
-						t.Fatalf("Got %s paths, want %s", got, want)
-					}
-				})
+			buffer := bytes.Buffer{}
+			Travel(strings.NewReader(test.in), &buffer)
+			got := buffer.String()
+			want := test.out
+			if got != want {
+				t.Fatalf("Got %s paths, want %s", got, want)
 			}
 		})
 	}

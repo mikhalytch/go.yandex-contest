@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	Travel(os.Stdin, os.Stdout, true)
+	Travel(os.Stdin, os.Stdout)
 }
 
 type TravelInput struct {
@@ -149,8 +149,17 @@ func CalcTravel(in *TravelInput, recursiveCalc bool) int {
 	}
 }
 
-func Travel(reader io.Reader, writer io.Writer, recursiveCalc bool) {
-	_, _ = fmt.Fprintf(writer, "%d", CalcTravel(ReadInput(reader), recursiveCalc))
+func Travel(reader io.Reader, writer io.Writer) {
+	input := ReadInput(reader)
+	var length int
+	if input == nil {
+		length = -1
+	} else if len(input.Cities) > 100 { // this amount is enough to have test #17 depth-first, and test #21 recursive
+		length = CalcTravel(input, true)
+	} else {
+		length = CalcTravel(input, false)
+	}
+	_, _ = fmt.Fprintf(writer, "%d", length)
 }
 func ReadInput(reader io.Reader) *TravelInput {
 	scanner := bufio.NewScanner(reader)
