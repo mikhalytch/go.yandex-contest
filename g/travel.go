@@ -33,6 +33,7 @@ func (td *TravelInput) ReachableMoves(fromNum uint16) []uint16 {
 	// check if we can append finish first
 	if td.isCityReachable(td.FinishCoordinates, fromCity) {
 		res = append(res, td.RouteFinish)
+		return res
 	}
 	for idx, c := range td.Cities {
 		if uint16(idx) != fromIdx && td.isCityReachable(c, fromCity) && idx != int(td.RouteFinish)-1 {
