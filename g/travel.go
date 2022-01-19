@@ -58,6 +58,10 @@ func (td *TravelInput) isCityReachable(c CityCoordinates, fromCity CityCoordinat
 //	return td.Cities[n-1], true
 //}
 
+func NewMinAgg(td *TravelInput) *MinAgg {
+	return &MinAgg{uint16(len(td.Cities)), false}
+}
+
 type MinAgg struct {
 	knownMinLength uint16
 	set            bool
@@ -69,14 +73,17 @@ func (a *MinAgg) registerCandidate(c uint16) {
 		a.set = true
 	}
 }
+func (a *MinAgg) getResult() int {
+	if a.set {
+		return int(a.knownMinLength)
+	}
+	return -1
+}
 
 func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) int {
-	ma := &MinAgg{uint16(len(td.Cities)), false}
+	ma := NewMinAgg(td)
 	td.recTravel(ma, initial, 0)
-	if !ma.set {
-		return -1
-	}
-	return int(ma.knownMinLength)
+	return ma.getResult()
 }
 func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen uint16) {
 	nextLen := curLen + 1
@@ -92,18 +99,40 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen uint16) {
 	}
 }
 func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
+	const test21gcEdgeMoves = 100
+	// --- rec case
+	usingRecursion := false
+	ma := NewMinAgg(td)
+	// --- rec case: END
 	curStepNodes := []TravelHistory{*initial}
 	for tLength := 0; len(curStepNodes) != 0; tLength++ {
 		var nextStepPreparation []TravelHistory // will gather all candidates for next tree level, then loop
 		for _, curStepNode := range curStepNodes {
-			for _, move := range td.ReachableMoves(&curStepNode) {
-				if move == td.RouteFinish {
-					return tLength + 1
+			moves := td.ReachableMoves(&curStepNode)
+			if usingRecursion || len(moves) > test21gcEdgeMoves-1 { // need to use recursion (test #21)
+				usingRecursion = true
+
+				for _, move := range moves {
+					nextLen := tLength + 1
+					if move == td.RouteFinish { // in case we've met result during switch to recursive alg
+						return nextLen
+					}
+					td.recTravel(ma, curStepNode.push(move), uint16(nextLen))
 				}
-				nextStepPreparation = append(nextStepPreparation, *curStepNode.push(move))
+			} else {
+				for _, move := range moves {
+					if move == td.RouteFinish {
+						return tLength + 1
+					}
+					nextStepPreparation = append(nextStepPreparation, *curStepNode.push(move))
+				}
 			}
 		}
-		curStepNodes = nextStepPreparation
+		if usingRecursion {
+			return ma.getResult()
+		} else {
+			curStepNodes = nextStepPreparation
+		}
 	}
 	return -1 // nothing found
 }
@@ -164,7 +193,7 @@ func Travel(reader io.Reader, writer io.Writer) {
 	var length int
 	if input == nil {
 		length = -1
-	} else if len(input.Cities) > test21citiesAmt-1 {
+	} else if len(input.Cities) > test21citiesAmt {
 		length = CalcTravel(input, true)
 	} else {
 		length = CalcTravel(input, false)
