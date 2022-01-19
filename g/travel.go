@@ -57,15 +57,6 @@ func (td *TravelInput) isCityReachable(c CityCoordinates, fromCity CityCoordinat
 //	return td.Cities[n-1], true
 //}
 
-func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) int {
-	ma := &MinAgg{uint16(len(td.Cities)), false}
-	td.recTravel(ma, initial, 0)
-	if !ma.set {
-		return -1
-	}
-	return int(ma.knownMinLength)
-}
-
 type MinAgg struct {
 	knownMinLength uint16
 	set            bool
@@ -77,13 +68,21 @@ func (a *MinAgg) registerCandidate(c uint16) {
 		a.set = true
 	}
 }
+
+func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) int {
+	ma := &MinAgg{uint16(len(td.Cities)), false}
+	td.recTravel(ma, initial, 0)
+	if !ma.set {
+		return -1
+	}
+	return int(ma.knownMinLength)
+}
 func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen uint16) {
-	moves := td.ReachableMoves(th.current)
 	nextLen := curLen + 1
 	if nextLen > ma.knownMinLength {
 		return
 	}
-	for _, move := range moves {
+	for _, move := range td.ReachableMoves(th.current) {
 		if move == td.RouteFinish {
 			ma.registerCandidate(nextLen)
 			break
@@ -99,8 +98,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 	for tLength := 0; len(curStepNodes) != 0; tLength++ {
 		var nextStepPreparation []TravelHistory // will gather all candidates for next tree level, then loop
 		for _, curStepNode := range curStepNodes {
-			reachableMoves := td.ReachableMoves(curStepNode.current)
-			for _, move := range reachableMoves {
+			for _, move := range td.ReachableMoves(curStepNode.current) {
 				if move == td.RouteFinish {
 					return tLength + 1
 				}
