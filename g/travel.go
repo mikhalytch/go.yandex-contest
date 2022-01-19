@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 // even 100 is enough to have test #17 depth-first (fails on recursive); test #21 has 1000 cities
@@ -25,7 +26,7 @@ type TravelInput struct {
 	FinishCoordinates CityCoordinates
 }
 
-func (td *TravelInput) isExist(i int) bool { return i > 0 && i <= int(len(td.Cities)) }
+func (td *TravelInput) isExist(i int) bool { return i > 0 && i <= len(td.Cities) }
 func (td *TravelInput) ReachableMoves(th *TravelHistory) []int {
 	// todo fixing #21
 	//if !td.isExist(fromNum) {
@@ -40,9 +41,9 @@ func (td *TravelInput) ReachableMoves(th *TravelHistory) []int {
 		return res
 	}
 	for idx, c := range td.Cities {
-		num := int(idx + 1)
-		if int(idx) != fromIdx && td.isCityReachable(c, fromCity) && num != td.RouteFinish && !th.contains(num) {
-			res = append(res, int(idx+1))
+		num := idx + 1
+		if idx != fromIdx && td.isCityReachable(c, fromCity) && num != td.RouteFinish && !th.contains(num) {
+			res = append(res, num)
 		}
 	}
 	return res
@@ -60,7 +61,7 @@ func (td *TravelInput) isCityReachable(c CityCoordinates, fromCity CityCoordinat
 //}
 
 func NewMinAgg(td *TravelInput) *MinAgg {
-	return &MinAgg{int(len(td.Cities) - 1), false, sync.Mutex{}}
+	return &MinAgg{len(td.Cities) - 1, false, sync.Mutex{}}
 }
 
 type MinAgg struct {
@@ -70,30 +71,39 @@ type MinAgg struct {
 }
 
 func (a *MinAgg) registerCandidate(length int) {
-	//a.mu.Lock()
-	//defer a.mu.Unlock()
 	if a.knownMinLength > length {
+		a.mu.Lock()
+		defer a.mu.Unlock()
 		a.knownMinLength = length
 		a.set = true
 	}
 }
 func (a *MinAgg) getResult() int {
-	//a.mu.Lock()
-	//defer a.mu.Unlock()
+	a.mu.Lock()
+	defer a.mu.Unlock()
 	if a.set {
-		return int(a.knownMinLength)
+		return a.knownMinLength
 	}
 	return -1
 }
 
 func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) int {
 	ma := NewMinAgg(td)
-	td.recTravel(ma, initial, 0)
+	rc := make(chan interface{})
+	to := time.After(983 * time.Millisecond)
+	go func() {
+		td.recTravel(ma, initial, 0)
+		close(rc)
+	}()
+	select {
+	case <-to:
+	case <-rc:
+	}
 	return ma.getResult()
 }
 func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen int) {
 	nextLen := curLen + 1
-	if nextLen > ma.knownMinLength {
+	if nextLen >= ma.knownMinLength {
 		return
 	}
 	for _, move := range td.ReachableMoves(th) {
@@ -105,7 +115,7 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen int) {
 		push := th.push(move)
 		td.recTravel(ma, push, nextLen)
 		th = push.pop(move, cur)
-		if nextLen > ma.knownMinLength { // in case last recursive call gave some result
+		if nextLen >= ma.knownMinLength { // in case last recursive call stored some new result to `ma`
 			break
 		}
 	}
@@ -118,7 +128,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 	//wg := &sync.WaitGroup{}
 	doRecurseFromHere := func(ths []TravelHistory, curLen int, ma *MinAgg) {
 		for _, th := range ths {
-			td.recTravel(ma, &th, int(curLen))
+			td.recTravel(ma, &th, curLen)
 		}
 		//wg.Done()
 	}
@@ -156,7 +166,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 					// todo test21 : try recursive
 					for i := 0; i < len(moves); i++ {
 						move := moves[i]
-						nextLen := int(tLength + 1)
+						nextLen := tLength + 1
 						if move == td.RouteFinish { // in case we've met result during switch to recursive alg
 							ma.registerCandidate(nextLen)
 							break
@@ -189,7 +199,7 @@ func NewTravelHistory(cur int) *TravelHistory {
 }
 
 type TravelHistory struct {
-	prevM   *map[int]bool // for first 100
+	prevM   *map[int]bool
 	current int
 }
 
@@ -303,35 +313,37 @@ func ReadInput(reader io.Reader) *TravelInput {
 	return result
 }
 
-var distCache = make(map[CityCoordinates]map[CityCoordinates]int)
+//var distCache = make(map[CityCoordinates]map[CityCoordinates]int)
 
 func Distance(a, b CityCoordinates) int {
-	av, aok := distCache[a]
-	if !aok {
-		av = make(map[CityCoordinates]int)
-		distCache[a] = av
-	}
-	bv, bok := av[b]
-	if !bok {
-		bv = intAbs(a.X-b.X) + intAbs(a.Y-b.Y)
-		av[b] = bv
-	}
-	b1v, b1ok := distCache[b]
-	if !b1ok {
-		b1v = make(map[CityCoordinates]int)
-		distCache[b] = b1v
-	}
-	_, a1ok := b1v[a]
-	if !a1ok {
-		b1v[a] = bv
-	}
-	return bv
+	//av, aok := distCache[a]
+	//if !aok {
+	//	av = make(map[CityCoordinates]int)
+	//	distCache[a] = av
+	//}
+	//bv, bok := av[b]
+	//if !bok {
+	//	bv = intAbs(a.X-b.X) + intAbs(a.Y-b.Y)
+	//	av[b] = bv
+	//}
+	//b1v, b1ok := distCache[b]
+	//if !b1ok {
+	//	b1v = make(map[CityCoordinates]int)
+	//	distCache[b] = b1v
+	//}
+	//_, a1ok := b1v[a]
+	//if !a1ok {
+	//	b1v[a] = bv
+	//}
+	//return bv
+
+	return intAbs(a.X-b.X) + intAbs(a.Y-b.Y)
 }
 func intAbs(a int) int {
 	if a < 0 {
-		return int(-a)
+		return -a
 	}
-	return int(a)
+	return a
 }
 func copyMap(s *map[int]bool) *map[int]bool {
 	r := make(map[int]bool)
