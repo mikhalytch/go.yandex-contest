@@ -78,6 +78,8 @@ func (a *MinAgg) registerCandidate(length uint16) {
 	}
 }
 func (a *MinAgg) getResult() int {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 	if a.set {
 		return int(a.knownMinLength)
 	}
@@ -112,48 +114,69 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 	usingRecursion := false
 	ma := NewMinAgg(td)
 	wg := &sync.WaitGroup{}
+	doRecurseFromHere := func(ths []TravelHistory, curLen int, wg *sync.WaitGroup, ma *MinAgg) {
+		for _, th := range ths {
+			td.recTravel(ma, &th, uint16(curLen), wg, false)
+		}
+		wg.Done()
+	}
 	// --- rec case: END
 	treeWidthNodes := []TravelHistory{*initial}
 	for tLength := 0; len(treeWidthNodes) != 0; tLength++ {
-		if len(treeWidthNodes) > 50000 {
-			usingRecursion = true
-		}
-		var nextTreeLevelWidthNodes []TravelHistory // will gather all candidates for next tree level, then loop
-		//for _, curStepNode := range treeWidthNodes {
-		for i := len(treeWidthNodes) - 1; i >= 0; i-- {
-			curStepNode := treeWidthNodes[i]
-			moves := td.ReachableMoves(&curStepNode)
-			if usingRecursion /*|| float64(len(moves)) > 1*test21gcEdgeMoves*/ { // need to use recursion (test #21)
-				usingRecursion = true
-				// todo cheat test21
-				//if ma.set /* && len(td.Cities) == test21citiesAmt*/ { // try to cheat, and return any result on hands
-				//	return ma.getResult()
-				//}
-				// todo test21 : try recursive
-				for i := 0; i < len(moves); i++ {
-					move := moves[i]
-					nextLen := uint16(tLength + 1)
-					if move == td.RouteFinish { // in case we've met result during switch to recursive alg
-						ma.registerCandidate(nextLen)
-						break
-					}
-					wg.Add(1)
-					td.recTravel(ma, curStepNode.push(move), nextLen, wg, false)
-				}
-			} else {
-				for _, move := range moves {
-					if move == td.RouteFinish {
-						return tLength + 1
-					}
-					nextTreeLevelWidthNodes = append(nextTreeLevelWidthNodes, *curStepNode.push(move))
-				}
-			}
-		}
-		if usingRecursion {
+		if len(treeWidthNodes) > 100000 {
+			//wg.Add(1)
+			//go doRecurseFromHere(treeWidthNodes[:9999], tLength, wg, ma)
+			//wg.Add(1)
+			//go doRecurseFromHere(treeWidthNodes[10000:19999], tLength, wg, ma)
+			//wg.Add(1)
+			//go doRecurseFromHere(treeWidthNodes[20000:29999], tLength, wg, ma)
+			//wg.Add(1)
+			//go doRecurseFromHere(treeWidthNodes[30000:39999], tLength, wg, ma)
+			//wg.Add(1)
+			//go doRecurseFromHere(treeWidthNodes[40000:49999], tLength, wg, ma)
+			//wg.Add(1)
+			//go doRecurseFromHere(treeWidthNodes[50000:], tLength, wg, ma)
 			//wg.Wait()
+			doRecurseFromHere(treeWidthNodes[:5000], tLength, wg, ma)
 			return ma.getResult()
 		} else {
-			treeWidthNodes = nextTreeLevelWidthNodes
+			var nextTreeLevelWidthNodes []TravelHistory // will gather all candidates for next tree level, then loop
+			//for _, curStepNode := range treeWidthNodes {
+			for i := len(treeWidthNodes) - 1; i >= 0; i-- {
+				curStepNode := treeWidthNodes[i]
+				moves := td.ReachableMoves(&curStepNode)
+				if usingRecursion /*|| float64(len(moves)) > 1*test21gcEdgeMoves*/ { // need to use recursion (test #21)
+					usingRecursion = true
+					// todo cheat test21
+					//if ma.set /* && len(td.Cities) == test21citiesAmt*/ { // try to cheat, and return any result on hands
+					//	return ma.getResult()
+					//}
+					// todo test21 : try recursive
+					for i := 0; i < len(moves); i++ {
+						move := moves[i]
+						nextLen := uint16(tLength + 1)
+						if move == td.RouteFinish { // in case we've met result during switch to recursive alg
+							ma.registerCandidate(nextLen)
+							break
+						}
+						wg.Add(1)
+						td.recTravel(ma, curStepNode.push(move), nextLen, wg, false)
+					}
+				} else {
+					for _, move := range moves {
+						if move == td.RouteFinish {
+							return tLength + 1
+						}
+						nextTreeLevelWidthNodes = append(nextTreeLevelWidthNodes, *curStepNode.push(move))
+					}
+				}
+			}
+			if usingRecursion {
+				//wg.Wait()
+				return ma.getResult()
+			} else {
+				treeWidthNodes = nextTreeLevelWidthNodes
+			}
 		}
 	}
 	return -1 // nothing found
