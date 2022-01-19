@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -45,7 +46,40 @@ func (td *TravelInput) ReachableMoves(from uint16) []uint16 {
 //}
 
 func (td *TravelInput) TravelLengthRecursive() int {
-	return -1
+	ma := &MinAgg{math.MaxUint16}
+	td.recTravel(ma, TravelHistory{nil, td.RouteStart}, 0)
+	if ma.knownMinLength == math.MaxUint16 {
+		return -1
+	} else {
+		return int(ma.knownMinLength)
+	}
+}
+
+type MinAgg struct {
+	knownMinLength uint16
+}
+
+func (a *MinAgg) registerCandidate(c uint16) {
+	if a.knownMinLength > c {
+		a.knownMinLength = c
+	}
+}
+func (td *TravelInput) recTravel(ma *MinAgg, th TravelHistory, curLen uint16) {
+	if curLen > ma.knownMinLength {
+		return
+	}
+	moves := td.ReachableMoves(th.current)
+	nextLen := curLen + 1
+	for _, move := range moves {
+		if move == td.RouteFinish {
+			ma.registerCandidate(nextLen)
+			break
+		}
+		if th.contains(move) {
+			continue
+		}
+		td.recTravel(ma, th.push(move), nextLen)
+	}
 }
 func (td *TravelInput) TravelLengthStepped() int {
 	curStepNodes := []TravelHistory{{nil, td.RouteStart}}
