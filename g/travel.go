@@ -14,10 +14,11 @@ func main() {
 }
 
 type TravelInput struct {
-	Cities         []CityCoordinates
-	MaxUnRefuelled int
-	RouteStart     uint16
-	RouteFinish    uint16
+	Cities            []CityCoordinates
+	MaxUnRefuelled    int
+	RouteStart        uint16
+	RouteFinish       uint16
+	FinishCoordinates CityCoordinates
 }
 
 func (td *TravelInput) isExist(i uint16) bool { return i > 0 && i <= uint16(len(td.Cities)) }
@@ -29,12 +30,19 @@ func (td *TravelInput) ReachableMoves(fromNum uint16) []uint16 {
 	fromIdx := fromNum - 1
 	fromCity := td.Cities[fromIdx]
 	var res []uint16
+	// check if we can append finish first
+	if td.isCityReachable(td.FinishCoordinates, fromCity) {
+		res = append(res, td.RouteFinish)
+	}
 	for idx, c := range td.Cities {
-		if uint16(idx) != fromIdx && c.distanceTo(fromCity) <= td.MaxUnRefuelled {
+		if uint16(idx) != fromIdx && td.isCityReachable(c, fromCity) && idx != int(td.RouteFinish)-1 {
 			res = append(res, uint16(idx+1))
 		}
 	}
 	return res
+}
+func (td *TravelInput) isCityReachable(c CityCoordinates, fromCity CityCoordinates) bool {
+	return c.distanceTo(fromCity) <= td.MaxUnRefuelled
 }
 
 // todo fixing #21
@@ -198,6 +206,7 @@ func ReadInput(reader io.Reader) *TravelInput {
 			}
 			result.RouteStart = s
 			result.RouteFinish = e
+			result.FinishCoordinates = result.Cities[e-1]
 		} else {
 			return nil
 		}

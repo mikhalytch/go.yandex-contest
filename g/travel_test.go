@@ -56,9 +56,10 @@ var (
 			{2, -1},
 			{2, 1},
 		},
-		MaxUnRefuelled: 2,
-		RouteStart:     1,
-		RouteFinish:    3,
+		MaxUnRefuelled:    2,
+		RouteStart:        1,
+		RouteFinish:       3,
+		FinishCoordinates: CityCoordinates{2, 2},
 	}
 	ti2 = TravelInput{
 		[]CityCoordinates{
@@ -70,6 +71,7 @@ var (
 		2,
 		1,
 		4,
+		CityCoordinates{1, 1},
 	}
 	ti3 = TravelInput{
 		[]CityCoordinates{
@@ -81,6 +83,7 @@ var (
 		1,
 		1,
 		4,
+		CityCoordinates{2, 2},
 	}
 	recursive = []bool{true, false}
 )
@@ -177,7 +180,7 @@ func TestFirstCityReachableMoves(t *testing.T) {
 		want []uint16
 	}{
 		{ti1, []uint16{2, 4}},
-		{ti2, []uint16{2, 3, 4}},
+		{ti2, []uint16{4, 2, 3}},
 		{ti3, nil},
 	}
 	for idx, test := range tests {
