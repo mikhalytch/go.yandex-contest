@@ -70,16 +70,16 @@ type MinAgg struct {
 }
 
 func (a *MinAgg) registerCandidate(length uint16) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+	//a.mu.Lock()
+	//defer a.mu.Unlock()
 	if a.knownMinLength > length {
 		a.knownMinLength = length
 		a.set = true
 	}
 }
 func (a *MinAgg) getResult() int {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+	//a.mu.Lock()
+	//defer a.mu.Unlock()
 	if a.set {
 		return int(a.knownMinLength)
 	}
@@ -88,11 +88,10 @@ func (a *MinAgg) getResult() int {
 
 func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) int {
 	ma := NewMinAgg(td)
-	wg := &sync.WaitGroup{}
-	td.recTravel(ma, initial, 0, wg, false)
+	td.recTravel(ma, initial, 0)
 	return ma.getResult()
 }
-func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen uint16, wg *sync.WaitGroup, doDone bool) {
+func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen uint16) {
 	nextLen := curLen + 1
 	if nextLen > ma.knownMinLength {
 		return
@@ -102,10 +101,13 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen uint16, w
 			ma.registerCandidate(nextLen)
 			break
 		}
-		td.recTravel(ma, th.push(move), nextLen, wg, false)
-	}
-	if doDone {
-		wg.Done()
+		cur := th.current
+		push := th.push(move)
+		td.recTravel(ma, push, nextLen)
+		th = push.pop(move, cur)
+		if nextLen > ma.knownMinLength { // in case last recursive call gave some result
+			break
+		}
 	}
 }
 func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
@@ -113,12 +115,12 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 	// --- rec case
 	usingRecursion := false
 	ma := NewMinAgg(td)
-	wg := &sync.WaitGroup{}
-	doRecurseFromHere := func(ths []TravelHistory, curLen int, wg *sync.WaitGroup, ma *MinAgg) {
+	//wg := &sync.WaitGroup{}
+	doRecurseFromHere := func(ths []TravelHistory, curLen int, ma *MinAgg) {
 		for _, th := range ths {
-			td.recTravel(ma, &th, uint16(curLen), wg, false)
+			td.recTravel(ma, &th, uint16(curLen))
 		}
-		wg.Done()
+		//wg.Done()
 	}
 	// --- rec case: END
 	treeWidthNodes := []TravelHistory{*initial}
@@ -137,7 +139,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 			//wg.Add(1)
 			//go doRecurseFromHere(treeWidthNodes[50000:], tLength, wg, ma)
 			//wg.Wait()
-			doRecurseFromHere(treeWidthNodes[:5000], tLength, wg, ma)
+			doRecurseFromHere(treeWidthNodes[:5000], tLength, ma)
 			return ma.getResult()
 		} else {
 			var nextTreeLevelWidthNodes []TravelHistory // will gather all candidates for next tree level, then loop
@@ -159,8 +161,8 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 							ma.registerCandidate(nextLen)
 							break
 						}
-						wg.Add(1)
-						td.recTravel(ma, curStepNode.push(move), nextLen, wg, false)
+						//wg.Add(1)
+						td.recTravel(ma, curStepNode.push(move), nextLen /*wg, false*/)
 					}
 				} else {
 					for _, move := range moves {
@@ -183,14 +185,11 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 }
 
 func NewTravelHistory(cur uint16) *TravelHistory {
-	return &TravelHistory{&map[uint16]bool{}, nil, cur}
+	return &TravelHistory{&map[uint16]bool{}, cur}
 }
-
-const firstHistoryMapEntries = 1000
 
 type TravelHistory struct {
 	prevM   *map[uint16]bool // for first 100
-	prev    *TravelHistory
 	current uint16
 }
 
@@ -198,25 +197,21 @@ func (t *TravelHistory) contains(s uint16) bool {
 	if t.current == s {
 		return true
 	}
-	if len(*t.prevM) == 0 && t.prev == nil {
+	if len(*t.prevM) == 0 {
 		return false
 	}
-	if t.prev != nil {
-		return t.prev.contains(s)
-	} else {
-		_, ok := (*t.prevM)[s]
-		return ok
-	}
+	_, ok := (*t.prevM)[s]
+	return ok
 }
-
 func (t *TravelHistory) push(move uint16) *TravelHistory {
-	if len(*t.prevM) <= firstHistoryMapEntries {
-		c := copyMap(t.prevM)
-		(*c)[t.current] = true
-		return &TravelHistory{c, nil, move}
-	} else {
-		return &TravelHistory{t.prevM, t, move}
-	}
+	(*t.prevM)[t.current] = true
+	t.current = move
+	return t
+}
+func (t *TravelHistory) pop(move uint16, cur uint16) *TravelHistory {
+	delete(*t.prevM, move)
+	t.current = cur
+	return t
 }
 
 type CityCoordinates struct {
