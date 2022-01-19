@@ -46,25 +46,26 @@ func (td *TravelInput) ReachableMoves(from uint16) []uint16 {
 //}
 
 func (td *TravelInput) TravelLengthRecursive() int {
-	ma := &MinAgg{math.MaxUint16}
-	td.recTravel(ma, TravelHistory{nil, td.RouteStart}, 0)
-	if ma.knownMinLength == math.MaxUint16 {
+	ma := &MinAgg{math.MaxUint16, false}
+	td.recTravel(ma, &TravelHistory{nil, td.RouteStart}, 0)
+	if !ma.set {
 		return -1
-	} else {
-		return int(ma.knownMinLength)
 	}
+	return int(ma.knownMinLength)
 }
 
 type MinAgg struct {
 	knownMinLength uint16
+	set            bool
 }
 
 func (a *MinAgg) registerCandidate(c uint16) {
 	if a.knownMinLength > c {
 		a.knownMinLength = c
+		a.set = true
 	}
 }
-func (td *TravelInput) recTravel(ma *MinAgg, th TravelHistory, curLen uint16) {
+func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen uint16) {
 	if curLen > ma.knownMinLength {
 		return
 	}
@@ -94,7 +95,7 @@ func (td *TravelInput) TravelLengthStepped() int {
 				if curStepNode.contains(move) {
 					continue
 				}
-				nextStepPreparation = append(nextStepPreparation, curStepNode.push(move))
+				nextStepPreparation = append(nextStepPreparation, *curStepNode.push(move))
 			}
 		}
 		curStepNodes = nextStepPreparation
@@ -117,8 +118,8 @@ func (t *TravelHistory) contains(s uint16) bool {
 	return t.prev.contains(s)
 }
 
-func (t *TravelHistory) push(move uint16) TravelHistory {
-	return TravelHistory{t, move}
+func (t *TravelHistory) push(move uint16) *TravelHistory {
+	return &TravelHistory{t, move}
 }
 
 type CityCoordinates struct {
