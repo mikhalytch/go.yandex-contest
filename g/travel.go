@@ -57,9 +57,9 @@ func (td *TravelInput) isCityReachable(c CityCoordinates, fromCity CityCoordinat
 //	return td.Cities[n-1], true
 //}
 
-func (td *TravelInput) TravelLengthRecursive() int {
+func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) int {
 	ma := &MinAgg{uint16(len(td.Cities)), false}
-	td.recTravel(ma, &TravelHistory{nil, td.RouteStart}, 0)
+	td.recTravel(ma, initial, 0)
 	if !ma.set {
 		return -1
 	}
@@ -94,8 +94,8 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen uint16) {
 		td.recTravel(ma, th.push(move), nextLen)
 	}
 }
-func (td *TravelInput) TravelLengthStepped() int {
-	curStepNodes := []TravelHistory{{nil, td.RouteStart}}
+func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
+	curStepNodes := []TravelHistory{*initial}
 	for tLength := 0; len(curStepNodes) != 0; tLength++ {
 		var nextStepPreparation []TravelHistory // will gather all candidates for next tree level, then loop
 		for _, curStepNode := range curStepNodes {
@@ -157,11 +157,12 @@ func CalcTravel(in *TravelInput, recursiveCalc bool) int {
 	if in.RouteStart == in.RouteFinish {
 		return 0
 	}
+	initial := &TravelHistory{nil, in.RouteStart}
 	switch recursiveCalc {
 	case true:
-		return in.TravelLengthRecursive()
+		return in.TravelLengthRecursive(initial)
 	default:
-		return in.TravelLengthStepped()
+		return in.TravelLengthStepped(initial)
 	}
 }
 
