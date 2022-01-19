@@ -177,10 +177,10 @@ func TestDistance(t *testing.T) {
 func TestFirstCityReachableMoves(t *testing.T) {
 	tests := []struct {
 		ti   TravelInput
-		want []uint16
+		want []int
 	}{
-		{ti1, []uint16{2, 4}},
-		{ti2, []uint16{4 /*, 2, 3*/}},
+		{ti1, []int{2, 4}},
+		{ti2, []int{4 /*, 2, 3*/}},
 		{ti3, nil},
 	}
 	for idx, test := range tests {

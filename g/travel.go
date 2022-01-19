@@ -20,29 +20,29 @@ func main() {
 type TravelInput struct {
 	Cities            []CityCoordinates
 	MaxUnRefuelled    int
-	RouteStart        uint16
-	RouteFinish       uint16
+	RouteStart        int
+	RouteFinish       int
 	FinishCoordinates CityCoordinates
 }
 
-func (td *TravelInput) isExist(i uint16) bool { return i > 0 && i <= uint16(len(td.Cities)) }
-func (td *TravelInput) ReachableMoves(th *TravelHistory) []uint16 {
+func (td *TravelInput) isExist(i int) bool { return i > 0 && i <= int(len(td.Cities)) }
+func (td *TravelInput) ReachableMoves(th *TravelHistory) []int {
 	// todo fixing #21
 	//if !td.isExist(fromNum) {
 	//	return nil
 	//}
 	fromIdx := th.current - 1
 	fromCity := td.Cities[fromIdx]
-	var res []uint16
+	var res []int
 	// check if we can append finish first
 	if td.isCityReachable(td.FinishCoordinates, fromCity) {
 		res = append(res, td.RouteFinish)
 		return res
 	}
 	for idx, c := range td.Cities {
-		num := uint16(idx + 1)
-		if uint16(idx) != fromIdx && td.isCityReachable(c, fromCity) && num != td.RouteFinish && !th.contains(num) {
-			res = append(res, uint16(idx+1))
+		num := int(idx + 1)
+		if int(idx) != fromIdx && td.isCityReachable(c, fromCity) && num != td.RouteFinish && !th.contains(num) {
+			res = append(res, int(idx+1))
 		}
 	}
 	return res
@@ -52,7 +52,7 @@ func (td *TravelInput) isCityReachable(c CityCoordinates, fromCity CityCoordinat
 }
 
 // todo fixing #21
-//func (td *TravelInput) cityByNum(n uint16) (CityCoordinates, bool) {
+//func (td *TravelInput) cityByNum(n int) (CityCoordinates, bool) {
 //	if !td.isExist(n) {
 //		return CityCoordinates{}, false
 //	}
@@ -60,16 +60,16 @@ func (td *TravelInput) isCityReachable(c CityCoordinates, fromCity CityCoordinat
 //}
 
 func NewMinAgg(td *TravelInput) *MinAgg {
-	return &MinAgg{uint16(len(td.Cities) - 1), false, sync.Mutex{}}
+	return &MinAgg{int(len(td.Cities) - 1), false, sync.Mutex{}}
 }
 
 type MinAgg struct {
-	knownMinLength uint16
+	knownMinLength int
 	set            bool
 	mu             sync.Mutex
 }
 
-func (a *MinAgg) registerCandidate(length uint16) {
+func (a *MinAgg) registerCandidate(length int) {
 	//a.mu.Lock()
 	//defer a.mu.Unlock()
 	if a.knownMinLength > length {
@@ -91,7 +91,7 @@ func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) int {
 	td.recTravel(ma, initial, 0)
 	return ma.getResult()
 }
-func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen uint16) {
+func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen int) {
 	nextLen := curLen + 1
 	if nextLen > ma.knownMinLength {
 		return
@@ -118,7 +118,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 	//wg := &sync.WaitGroup{}
 	doRecurseFromHere := func(ths []TravelHistory, curLen int, ma *MinAgg) {
 		for _, th := range ths {
-			td.recTravel(ma, &th, uint16(curLen))
+			td.recTravel(ma, &th, int(curLen))
 		}
 		//wg.Done()
 	}
@@ -156,7 +156,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 					// todo test21 : try recursive
 					for i := 0; i < len(moves); i++ {
 						move := moves[i]
-						nextLen := uint16(tLength + 1)
+						nextLen := int(tLength + 1)
 						if move == td.RouteFinish { // in case we've met result during switch to recursive alg
 							ma.registerCandidate(nextLen)
 							break
@@ -184,16 +184,16 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 	return -1 // nothing found
 }
 
-func NewTravelHistory(cur uint16) *TravelHistory {
-	return &TravelHistory{&map[uint16]bool{}, cur}
+func NewTravelHistory(cur int) *TravelHistory {
+	return &TravelHistory{&map[int]bool{}, cur}
 }
 
 type TravelHistory struct {
-	prevM   *map[uint16]bool // for first 100
-	current uint16
+	prevM   *map[int]bool // for first 100
+	current int
 }
 
-func (t *TravelHistory) contains(s uint16) bool {
+func (t *TravelHistory) contains(s int) bool {
 	if t.current == s {
 		return true
 	}
@@ -203,24 +203,24 @@ func (t *TravelHistory) contains(s uint16) bool {
 	_, ok := (*t.prevM)[s]
 	return ok
 }
-func (t *TravelHistory) push(move uint16) *TravelHistory {
+func (t *TravelHistory) push(move int) *TravelHistory {
 	(*t.prevM)[t.current] = true
 	t.current = move
 	return t
 }
-func (t *TravelHistory) pop(move uint16, cur uint16) *TravelHistory {
+func (t *TravelHistory) pop(move int, cur int) *TravelHistory {
 	delete(*t.prevM, move)
 	t.current = cur
 	return t
 }
 
-func NewCityCoordinates(x, y int32) CityCoordinates {
+func NewCityCoordinates(x, y int) CityCoordinates {
 	return CityCoordinates{X: x, Y: y}
 }
 
 type CityCoordinates struct {
-	X int32
-	Y int32
+	X int
+	Y int
 }
 
 func (cc CityCoordinates) distanceTo(a CityCoordinates) int {
@@ -275,7 +275,7 @@ func ReadInput(reader io.Reader) *TravelInput {
 			}
 			cAmt = num
 		} else if lineIdx <= cAmt {
-			var x, y int32
+			var x, y int
 			scanned, err := fmt.Fscanf(strings.NewReader(lineText), "%d %d", &x, &y)
 			if err != nil || scanned != 2 {
 				return nil
@@ -288,7 +288,7 @@ func ReadInput(reader io.Reader) *TravelInput {
 			}
 			result.MaxUnRefuelled = num
 		} else if lineIdx == cAmt+2 {
-			var s, e uint16
+			var s, e int
 			scanned, err := fmt.Fscanf(strings.NewReader(lineText), "%d %d", &s, &e)
 			if err != nil || scanned != 2 {
 				return nil
@@ -306,14 +306,14 @@ func ReadInput(reader io.Reader) *TravelInput {
 func Distance(a, b CityCoordinates) int {
 	return intAbs(a.X-b.X) + intAbs(a.Y-b.Y)
 }
-func intAbs(a int32) int {
+func intAbs(a int) int {
 	if a < 0 {
 		return int(-a)
 	}
 	return int(a)
 }
-func copyMap(s *map[uint16]bool) *map[uint16]bool {
-	r := make(map[uint16]bool)
+func copyMap(s *map[int]bool) *map[int]bool {
+	r := make(map[int]bool)
 	for u, b := range *s {
 		r[u] = b
 	}
