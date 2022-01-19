@@ -25,12 +25,12 @@ type TravelInput struct {
 }
 
 func (td *TravelInput) isExist(i uint16) bool { return i > 0 && i <= uint16(len(td.Cities)) }
-func (td *TravelInput) ReachableMoves(fromNum uint16) []uint16 {
+func (td *TravelInput) ReachableMoves(th *TravelHistory) []uint16 {
 	// todo fixing #21
 	//if !td.isExist(fromNum) {
 	//	return nil
 	//}
-	fromIdx := fromNum - 1
+	fromIdx := th.current - 1
 	fromCity := td.Cities[fromIdx]
 	var res []uint16
 	// check if we can append finish first
@@ -39,7 +39,8 @@ func (td *TravelInput) ReachableMoves(fromNum uint16) []uint16 {
 		return res
 	}
 	for idx, c := range td.Cities {
-		if uint16(idx) != fromIdx && td.isCityReachable(c, fromCity) && idx != int(td.RouteFinish)-1 {
+		num := uint16(idx + 1)
+		if uint16(idx) != fromIdx && td.isCityReachable(c, fromCity) && num != td.RouteFinish && !th.contains(num) {
 			res = append(res, uint16(idx+1))
 		}
 	}
@@ -82,13 +83,10 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen uint16) {
 	if nextLen > ma.knownMinLength {
 		return
 	}
-	for _, move := range td.ReachableMoves(th.current) {
+	for _, move := range td.ReachableMoves(th) {
 		if move == td.RouteFinish {
 			ma.registerCandidate(nextLen)
 			break
-		}
-		if th.contains(move) {
-			continue
 		}
 		td.recTravel(ma, th.push(move), nextLen)
 	}
@@ -98,12 +96,9 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 	for tLength := 0; len(curStepNodes) != 0; tLength++ {
 		var nextStepPreparation []TravelHistory // will gather all candidates for next tree level, then loop
 		for _, curStepNode := range curStepNodes {
-			for _, move := range td.ReachableMoves(curStepNode.current) {
+			for _, move := range td.ReachableMoves(&curStepNode) {
 				if move == td.RouteFinish {
 					return tLength + 1
-				}
-				if curStepNode.contains(move) {
-					continue
 				}
 				nextStepPreparation = append(nextStepPreparation, *curStepNode.push(move))
 			}
