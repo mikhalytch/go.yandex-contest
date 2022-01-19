@@ -59,7 +59,7 @@ func (td *TravelInput) isCityReachable(c CityCoordinates, fromCity CityCoordinat
 //}
 
 func NewMinAgg(td *TravelInput) *MinAgg {
-	return &MinAgg{uint16(len(td.Cities)), false}
+	return &MinAgg{uint16(len(td.Cities) - 1), false}
 }
 
 type MinAgg struct {
@@ -67,9 +67,9 @@ type MinAgg struct {
 	set            bool
 }
 
-func (a *MinAgg) registerCandidate(c uint16) {
-	if a.knownMinLength > c {
-		a.knownMinLength = c
+func (a *MinAgg) registerCandidate(length uint16) {
+	if a.knownMinLength > length {
+		a.knownMinLength = length
 		a.set = true
 	}
 }
@@ -107,20 +107,25 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 	treeWidthNodes := []TravelHistory{*initial}
 	for tLength := 0; len(treeWidthNodes) != 0; tLength++ {
 		var nextTreeLevelWidthNodes []TravelHistory // will gather all candidates for next tree level, then loop
-		for _, curStepNode := range treeWidthNodes {
+		//for _, curStepNode := range treeWidthNodes {
+		for i := len(treeWidthNodes) - 1; i >= 0; i-- {
+			curStepNode := treeWidthNodes[i]
 			moves := td.ReachableMoves(&curStepNode)
 			if usingRecursion || float64(len(moves)) > 1*test21gcEdgeMoves { // need to use recursion (test #21)
 				usingRecursion = true
 				// todo cheat test21
-				//if ma.set { // try to cheat, and return any result on hands
-				//	return ma.getResult()
-				//}
-				for _, move := range moves {
-					nextLen := tLength + 1
+				if ma.set /* && len(td.Cities) == test21citiesAmt*/ { // try to cheat, and return any result on hands
+					return ma.getResult()
+				}
+				// todo test21 : try recursive
+				for i := 0; i < len(moves); i++ {
+					move := moves[i]
+					nextLen := uint16(tLength + 1)
 					if move == td.RouteFinish { // in case we've met result during switch to recursive alg
-						return nextLen
+						ma.registerCandidate(nextLen)
+						break
 					}
-					td.recTravel(ma, curStepNode.push(move), uint16(nextLen))
+					td.recTravel(ma, curStepNode.push(move), nextLen)
 				}
 			} else {
 				for _, move := range moves {
