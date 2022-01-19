@@ -182,6 +182,10 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 	return -1 // nothing found
 }
 
+func NewTravelHistory(cur uint16) *TravelHistory {
+	return &TravelHistory{nil, cur}
+}
+
 type TravelHistory struct {
 	prev    *TravelHistory
 	current uint16
@@ -224,7 +228,7 @@ func CalcTravel(in *TravelInput, recursiveCalc bool) int {
 	if in.RouteStart == in.RouteFinish {
 		return 0
 	}
-	initial := &TravelHistory{nil, in.RouteStart}
+	initial := NewTravelHistory(in.RouteStart)
 	switch recursiveCalc {
 	case true:
 		return in.TravelLengthRecursive(initial)
@@ -238,7 +242,7 @@ func Travel(reader io.Reader, writer io.Writer) {
 	var length int
 	if input == nil {
 		length = -1
-	} else if len(input.Cities) > test21citiesAmt {
+	} else if len(input.Cities) > test21citiesAmt-1 {
 		length = CalcTravel(input, true)
 	} else {
 		length = CalcTravel(input, false)
