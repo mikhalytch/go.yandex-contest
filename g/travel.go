@@ -115,17 +115,20 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 	// --- rec case: END
 	treeWidthNodes := []TravelHistory{*initial}
 	for tLength := 0; len(treeWidthNodes) != 0; tLength++ {
+		if len(treeWidthNodes) > 50000 {
+			usingRecursion = true
+		}
 		var nextTreeLevelWidthNodes []TravelHistory // will gather all candidates for next tree level, then loop
 		//for _, curStepNode := range treeWidthNodes {
 		for i := len(treeWidthNodes) - 1; i >= 0; i-- {
 			curStepNode := treeWidthNodes[i]
 			moves := td.ReachableMoves(&curStepNode)
-			if usingRecursion || float64(len(moves)) > 1*test21gcEdgeMoves { // need to use recursion (test #21)
+			if usingRecursion /*|| float64(len(moves)) > 1*test21gcEdgeMoves*/ { // need to use recursion (test #21)
 				usingRecursion = true
 				// todo cheat test21
-				if ma.set /* && len(td.Cities) == test21citiesAmt*/ { // try to cheat, and return any result on hands
-					return ma.getResult()
-				}
+				//if ma.set /* && len(td.Cities) == test21citiesAmt*/ { // try to cheat, and return any result on hands
+				//	return ma.getResult()
+				//}
 				// todo test21 : try recursive
 				for i := 0; i < len(moves); i++ {
 					move := moves[i]
@@ -135,7 +138,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 						break
 					}
 					wg.Add(1)
-					go td.recTravel(ma, curStepNode.push(move), nextLen, wg, true)
+					td.recTravel(ma, curStepNode.push(move), nextLen, wg, false)
 				}
 			} else {
 				for _, move := range moves {
@@ -147,7 +150,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 			}
 		}
 		if usingRecursion {
-			wg.Wait()
+			//wg.Wait()
 			return ma.getResult()
 		} else {
 			treeWidthNodes = nextTreeLevelWidthNodes
