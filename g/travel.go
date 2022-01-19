@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -22,15 +21,16 @@ type TravelInput struct {
 }
 
 func (td *TravelInput) isExist(i uint16) bool { return i > 0 && i <= uint16(len(td.Cities)) }
-func (td *TravelInput) ReachableMoves(from uint16) []uint16 {
+func (td *TravelInput) ReachableMoves(fromNum uint16) []uint16 {
 	// todo fixing #21
-	//if !td.isExist(from) {
+	//if !td.isExist(fromNum) {
 	//	return nil
 	//}
-	f := td.Cities[from-1]
+	fromIdx := fromNum - 1
+	fromCity := td.Cities[fromIdx]
 	var res []uint16
 	for idx, c := range td.Cities {
-		if uint16(idx) != from-1 && c.distanceTo(f) <= td.MaxUnRefuelled {
+		if uint16(idx) != fromIdx && c.distanceTo(fromCity) <= td.MaxUnRefuelled {
 			res = append(res, uint16(idx+1))
 		}
 	}
@@ -46,7 +46,7 @@ func (td *TravelInput) ReachableMoves(from uint16) []uint16 {
 //}
 
 func (td *TravelInput) TravelLengthRecursive() int {
-	ma := &MinAgg{math.MaxUint16, false}
+	ma := &MinAgg{uint16(len(td.Cities)), false}
 	td.recTravel(ma, &TravelHistory{nil, td.RouteStart}, 0)
 	if !ma.set {
 		return -1
@@ -66,11 +66,11 @@ func (a *MinAgg) registerCandidate(c uint16) {
 	}
 }
 func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen uint16) {
-	if curLen > ma.knownMinLength {
-		return
-	}
 	moves := td.ReachableMoves(th.current)
 	nextLen := curLen + 1
+	if nextLen > ma.knownMinLength {
+		return
+	}
 	for _, move := range moves {
 		if move == td.RouteFinish {
 			ma.registerCandidate(nextLen)
