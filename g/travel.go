@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	Travel(os.Stdin, os.Stdout)
+	Travel(os.Stdin, os.Stdout, true)
 }
 
 type TravelInput struct {
@@ -44,21 +44,13 @@ func (td *TravelInput) ReachableMoves(from uint16) []uint16 {
 //	return td.Cities[n-1], true
 //}
 
-// TravelLength returns travel length on result found, -1 on no result
-func (td *TravelInput) TravelLength() int {
-	return td.TravelLengthStepped()
+func (td *TravelInput) TravelLengthRecursive() int {
+	return -1
 }
-
 func (td *TravelInput) TravelLengthStepped() int {
-	if !td.isExist(td.RouteStart) {
-		return -1
-	}
-	if !td.isExist(td.RouteFinish) {
-		return -1
-	}
 	curStepNodes := []TravelHistory{{nil, td.RouteStart}}
 	for tLength := 0; len(curStepNodes) != 0; tLength++ {
-		var nextStepPreparation []TravelHistory
+		var nextStepPreparation []TravelHistory // will gather all candidates for next tree level, then loop
 		for _, curStepNode := range curStepNodes {
 			reachableMoves := td.ReachableMoves(curStepNode.current)
 			for _, move := range reachableMoves {
@@ -104,15 +96,27 @@ func (cc CityCoordinates) distanceTo(a CityCoordinates) int {
 	return Distance(cc, a)
 }
 
-func CalcTravel(in *TravelInput) int {
+// CalcTravel returns travel length on result found, -1 on no result
+func CalcTravel(in *TravelInput, recursiveCalc bool) int {
 	if in == nil {
 		return -1
 	}
-	return in.TravelLength()
+	if !in.isExist(in.RouteStart) {
+		return -1
+	}
+	if !in.isExist(in.RouteFinish) {
+		return -1
+	}
+	switch recursiveCalc {
+	case true:
+		return in.TravelLengthRecursive()
+	default:
+		return in.TravelLengthStepped()
+	}
 }
 
-func Travel(reader io.Reader, writer io.Writer) {
-	_, _ = fmt.Fprintf(writer, "%d", CalcTravel(ReadInput(reader)))
+func Travel(reader io.Reader, writer io.Writer, recursiveCalc bool) {
+	_, _ = fmt.Fprintf(writer, "%d", CalcTravel(ReadInput(reader), recursiveCalc))
 }
 func ReadInput(reader io.Reader) *TravelInput {
 	scanner := bufio.NewScanner(reader)
