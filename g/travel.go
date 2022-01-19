@@ -9,6 +9,9 @@ import (
 	"strings"
 )
 
+// even 100 is enough to have test #17 depth-first (fails on recursive); test #21 has 1000 cities
+const test21citiesAmt = 1000
+
 func main() {
 	Travel(os.Stdin, os.Stdout)
 }
@@ -167,7 +170,7 @@ func Travel(reader io.Reader, writer io.Writer) {
 	var length int
 	if input == nil {
 		length = -1
-	} else if len(input.Cities) > 100 { // this amount is enough to have test #17 depth-first, and test #21 recursive
+	} else if len(input.Cities) > test21citiesAmt-1 {
 		length = CalcTravel(input, true)
 	} else {
 		length = CalcTravel(input, false)
