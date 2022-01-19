@@ -214,6 +214,10 @@ func (t *TravelHistory) pop(move uint16, cur uint16) *TravelHistory {
 	return t
 }
 
+func NewCityCoordinates(x, y int32) CityCoordinates {
+	return CityCoordinates{X: x, Y: y}
+}
+
 type CityCoordinates struct {
 	X int32
 	Y int32
@@ -276,7 +280,7 @@ func ReadInput(reader io.Reader) *TravelInput {
 			if err != nil || scanned != 2 {
 				return nil
 			}
-			result.Cities = append(result.Cities, CityCoordinates{x, y})
+			result.Cities = append(result.Cities, NewCityCoordinates(x, y))
 		} else if lineIdx == cAmt+1 {
 			num, err := strconv.Atoi(lineText)
 			if err != nil {

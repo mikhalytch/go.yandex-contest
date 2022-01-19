@@ -59,7 +59,7 @@ var (
 		MaxUnRefuelled:    2,
 		RouteStart:        1,
 		RouteFinish:       3,
-		FinishCoordinates: CityCoordinates{2, 2},
+		FinishCoordinates: NewCityCoordinates(2, 2),
 	}
 	ti2 = TravelInput{
 		[]CityCoordinates{
@@ -71,7 +71,7 @@ var (
 		2,
 		1,
 		4,
-		CityCoordinates{1, 1},
+		NewCityCoordinates(1, 1),
 	}
 	ti3 = TravelInput{
 		[]CityCoordinates{
@@ -83,7 +83,7 @@ var (
 		1,
 		1,
 		4,
-		CityCoordinates{2, 2},
+		NewCityCoordinates(2, 2),
 	}
 	recursive = []bool{true, false}
 )
@@ -162,9 +162,9 @@ func TestDistance(t *testing.T) {
 		a, b CityCoordinates
 		want int
 	}{
-		{CityCoordinates{0, 0}, CityCoordinates{2, 0}, 2},
-		{CityCoordinates{0, 2}, CityCoordinates{2, 2}, 2},
-		{CityCoordinates{0, 2}, CityCoordinates{0, 2}, 0},
+		{NewCityCoordinates(0, 0), NewCityCoordinates(2, 0), 2},
+		{NewCityCoordinates(0, 2), NewCityCoordinates(2, 2), 2},
+		{NewCityCoordinates(0, 2), NewCityCoordinates(0, 2), 0},
 	}
 	for idx, test := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
