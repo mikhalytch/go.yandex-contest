@@ -27,7 +27,7 @@ type TravelInput struct {
 }
 
 func (td *TravelInput) isExist(i int) bool { return i > 0 && i <= len(td.Cities) }
-func (td *TravelInput) ReachableMoves(th *TravelHistory) []int {
+func (td *TravelInput) ReachableMoves(th *TravelHistory, filter map[int]bool) []int {
 	// todo fixing #21
 	//if !td.isExist(fromNum) {
 	//	return nil
@@ -37,13 +37,13 @@ func (td *TravelInput) ReachableMoves(th *TravelHistory) []int {
 	var res []int
 	for idx := td.RouteFinish - 1; idx >= 0; idx-- {
 		num := idx + 1
-		if idx != fromIdx && td.isCityReachable(td.Cities[idx], fromCity) && !th.contains(num) {
+		if idx != fromIdx && !filter[num] && !th.contains(num) && td.isCityReachable(td.Cities[idx], fromCity) {
 			res = append(res, num)
 		}
 	}
-	for idx := td.RouteFinish; idx < len(td.Cities); idx++ {
+	for idx := td.RouteFinish; idx < len(td.Cities); idx++ { // todo merge up
 		num := idx + 1
-		if idx != fromIdx && td.isCityReachable(td.Cities[idx], fromCity) && !th.contains(num) {
+		if idx != fromIdx && !filter[num] && !th.contains(num) && td.isCityReachable(td.Cities[idx], fromCity) {
 			res = append(res, num)
 		}
 	}
@@ -91,10 +91,10 @@ func (a *MinAgg) getResult() int {
 func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) int {
 	ma := NewMinAgg(td)
 	rc := make(chan interface{})
-	to := time.After(983 * time.Millisecond)
+	to := time.After(950 * time.Millisecond)
 	go func() {
-		td.recTravel(ma, initial, 0)
-		close(rc)
+		td.recTravel(ma, initial, 0, map[int]bool{td.RouteStart: true})
+		rc <- false
 	}()
 	select {
 	case <-to:
@@ -102,19 +102,23 @@ func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) int {
 	}
 	return ma.getResult()
 }
-func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen int) {
+func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen int, filter map[int]bool) {
 	nextLen := curLen + 1
 	if nextLen >= ma.knownMinLength {
 		return
 	}
-	for _, move := range td.ReachableMoves(th) {
+	moves := td.ReachableMoves(th, filter)
+	if len(moves) == 0 {
+		filter[th.current] = true
+	}
+	for _, move := range moves {
 		if move == td.RouteFinish {
 			ma.registerCandidate(nextLen)
 			break
 		}
 		cur := th.current
 		push := th.push(move)
-		td.recTravel(ma, push, nextLen)
+		td.recTravel(ma, push, nextLen, filter)
 		th = push.pop(move, cur)
 		if nextLen >= ma.knownMinLength { // in case last recursive call stored some new result to `ma`
 			break
@@ -129,7 +133,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 	//wg := &sync.WaitGroup{}
 	doRecurseFromHere := func(ths []TravelHistory, curLen int, ma *MinAgg) {
 		for _, th := range ths {
-			td.recTravel(ma, &th, curLen)
+			td.recTravel(ma, &th, curLen, map[int]bool{} /*todo*/)
 		}
 		//wg.Done()
 	}
@@ -157,7 +161,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 			//for _, curStepNode := range treeWidthNodes {
 			for i := len(treeWidthNodes) - 1; i >= 0; i-- {
 				curStepNode := treeWidthNodes[i]
-				moves := td.ReachableMoves(&curStepNode)
+				moves := td.ReachableMoves(&curStepNode, map[int]bool{} /*todo*/)
 				if usingRecursion /*|| float64(len(moves)) > 1*test21gcEdgeMoves*/ { // need to use recursion (test #21)
 					usingRecursion = true
 					// todo cheat test21
@@ -173,7 +177,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 							break
 						}
 						//wg.Add(1)
-						td.recTravel(ma, curStepNode.push(move), nextLen /*wg, false*/)
+						td.recTravel(ma, curStepNode.push(move), nextLen /*wg, false*/, map[int]bool{} /*todo*/)
 					}
 				} else {
 					for _, move := range moves {
