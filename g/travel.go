@@ -303,8 +303,29 @@ func ReadInput(reader io.Reader) *TravelInput {
 	return result
 }
 
+var distCache = make(map[CityCoordinates]map[CityCoordinates]int)
+
 func Distance(a, b CityCoordinates) int {
-	return intAbs(a.X-b.X) + intAbs(a.Y-b.Y)
+	av, aok := distCache[a]
+	if !aok {
+		av = make(map[CityCoordinates]int)
+		distCache[a] = av
+	}
+	bv, bok := av[b]
+	if !bok {
+		bv = intAbs(a.X-b.X) + intAbs(a.Y-b.Y)
+		av[b] = bv
+	}
+	b1v, b1ok := distCache[b]
+	if !b1ok {
+		b1v = make(map[CityCoordinates]int)
+		distCache[b] = b1v
+	}
+	_, a1ok := b1v[a]
+	if !a1ok {
+		b1v[a] = bv
+	}
+	return bv
 }
 func intAbs(a int) int {
 	if a < 0 {
