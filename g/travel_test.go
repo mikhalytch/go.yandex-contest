@@ -180,7 +180,7 @@ func TestFirstCityReachableMoves(t *testing.T) {
 		want []int
 	}{
 		{ti1, []int{2, 4}},
-		{ti2, []int{4 /*, 2, 3*/}},
+		{ti2, []int{4, 3, 2}},
 		{ti3, nil},
 	}
 	for idx, test := range tests {

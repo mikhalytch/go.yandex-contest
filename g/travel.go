@@ -35,14 +35,15 @@ func (td *TravelInput) ReachableMoves(th *TravelHistory) []int {
 	fromIdx := th.current - 1
 	fromCity := td.Cities[fromIdx]
 	var res []int
-	// check if we can append finish first
-	if td.isCityReachable(td.FinishCoordinates, fromCity) {
-		res = append(res, td.RouteFinish)
-		return res
-	}
-	for idx, c := range td.Cities {
+	for idx := td.RouteFinish - 1; idx >= 0; idx-- {
 		num := idx + 1
-		if idx != fromIdx && td.isCityReachable(c, fromCity) && num != td.RouteFinish && !th.contains(num) {
+		if idx != fromIdx && td.isCityReachable(td.Cities[idx], fromCity) && !th.contains(num) {
+			res = append(res, num)
+		}
+	}
+	for idx := td.RouteFinish; idx < len(td.Cities); idx++ {
+		num := idx + 1
+		if idx != fromIdx && td.isCityReachable(td.Cities[idx], fromCity) && !th.contains(num) {
 			res = append(res, num)
 		}
 	}
