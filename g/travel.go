@@ -183,10 +183,13 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 }
 
 func NewTravelHistory(cur uint16) *TravelHistory {
-	return &TravelHistory{nil, cur}
+	return &TravelHistory{&map[uint16]bool{}, nil, cur}
 }
 
+const firstHistoryMapEntries = 1000
+
 type TravelHistory struct {
+	prevM   *map[uint16]bool // for first 100
 	prev    *TravelHistory
 	current uint16
 }
@@ -195,14 +198,25 @@ func (t *TravelHistory) contains(s uint16) bool {
 	if t.current == s {
 		return true
 	}
-	if t.prev == nil {
+	if len(*t.prevM) == 0 && t.prev == nil {
 		return false
 	}
-	return t.prev.contains(s)
+	if t.prev != nil {
+		return t.prev.contains(s)
+	} else {
+		_, ok := (*t.prevM)[s]
+		return ok
+	}
 }
 
 func (t *TravelHistory) push(move uint16) *TravelHistory {
-	return &TravelHistory{t, move}
+	if len(*t.prevM) <= firstHistoryMapEntries {
+		c := copyMap(t.prevM)
+		(*c)[t.current] = true
+		return &TravelHistory{c, nil, move}
+	} else {
+		return &TravelHistory{t.prevM, t, move}
+	}
 }
 
 type CityCoordinates struct {
@@ -298,4 +312,11 @@ func intAbs(a int32) int {
 		return int(-a)
 	}
 	return int(a)
+}
+func copyMap(s *map[uint16]bool) *map[uint16]bool {
+	r := make(map[uint16]bool)
+	for u, b := range *s {
+		r[u] = b
+	}
+	return &r
 }
