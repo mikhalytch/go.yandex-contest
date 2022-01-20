@@ -24,11 +24,10 @@ type TravelInput struct {
 func (td *TravelInput) Contains(i int) bool { return i > 0 && i <= len(td.Cities) }
 func (td *TravelInput) ReachableMoves(th *TravelHistory, filter *map[int]bool) []int {
 	fromIdx := th.current - 1
-	fromCity := td.Cities[fromIdx]
 	var res []int
 	for idx := 0; idx < len(td.Cities); idx++ {
 		num := idx + 1
-		if idx != fromIdx && !(*filter)[num] && td.IsCityReachable(td.Cities[idx], fromCity) {
+		if idx != fromIdx && !(*filter)[num] && td.IsCityReachable(td.Cities[idx], td.Cities[fromIdx]) {
 			// check if we have a loop: history containing reachable city means we could come here earlier,
 			// and current path is inefficient
 			if th.contains(num) {
@@ -43,7 +42,7 @@ func (td *TravelInput) IsCityReachable(c CityCoordinates, fromCity CityCoordinat
 	return c.distanceTo(fromCity) <= td.MaxUnRefuelled
 }
 
-func NewMinAgg(td *TravelInput) *MinAgg { return &MinAgg{len(td.Cities) - 1, false} }
+func (td *TravelInput) NewMinAgg() *MinAgg { return &MinAgg{len(td.Cities) - 1, false} }
 
 type MinAgg struct {
 	knownMinLength int
@@ -64,17 +63,21 @@ func (a *MinAgg) getResult() int {
 }
 
 func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) int {
-	ma := NewMinAgg(td)
+	ma := td.NewMinAgg()
 	td.recTravel(ma, initial, 0, 0, &map[int]bool{td.RouteStart: true}, &map[int]int{})
 	return ma.getResult()
 }
 func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, prev int, curLen int, filter *map[int]bool, visitLength *map[int]int) {
-	nextLen := curLen + 1
-	if l, ok := (*visitLength)[th.current]; !ok || curLen < l {
-		(*visitLength)[th.current] = curLen
-	} else if ok && l <= curLen {
+	if th.current == td.RouteFinish {
+		ma.registerCandidate(curLen)
 		return
 	}
+	if l, ok := (*visitLength)[th.current]; !ok || curLen < l {
+		(*visitLength)[th.current] = curLen
+	} else if ok && l < curLen {
+		return
+	}
+	nextLen := curLen + 1
 	if nextLen >= ma.knownMinLength {
 		return
 	}
@@ -85,10 +88,6 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, prev int, curLen
 		(*filter)[th.current] = true
 	}
 	for _, move := range moves {
-		if move == td.RouteFinish {
-			ma.registerCandidate(nextLen)
-			break
-		}
 		cur := th.current
 		push := th.push(move)
 		td.recTravel(ma, push, cur, nextLen, filter, visitLength)
@@ -152,9 +151,6 @@ func CalcTravel(in *TravelInput) int {
 	}
 	if !in.Contains(in.RouteFinish) {
 		return -1
-	}
-	if in.RouteStart == in.RouteFinish {
-		return 0
 	}
 	initial := NewTravelHistory(in.RouteStart)
 	return in.TravelLengthRecursive(initial)
