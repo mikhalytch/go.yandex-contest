@@ -26,7 +26,10 @@ func (td *TravelInput) ReachableMoves(th *TravelHistory, filter *map[int]bool) [
 	var res []int
 	for idx := 0; idx < len(td.Cities); idx++ {
 		num := idx + 1
-		if idx != fromIdx && !(*filter)[num] && td.IsCityReachable(td.Cities[idx], td.Cities[fromIdx]) {
+		if (*filter)[num] {
+			continue
+		}
+		if td.IsCityReachable(td.Cities[idx], td.Cities[fromIdx]) {
 			// check if we have a loop: history containing reachable city means we could come here earlier,
 			// and current path is inefficient
 			if th.contains(num) {
@@ -81,6 +84,7 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, prev int, curLen
 	}
 	rFilter := copyMap(filter)
 	(*rFilter)[prev] = true
+	(*rFilter)[th.current] = true
 	moves := td.ReachableMoves(th, rFilter)
 	if len(moves) == 0 {
 		(*filter)[th.current] = true

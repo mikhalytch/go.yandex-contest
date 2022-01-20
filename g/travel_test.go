@@ -226,18 +226,20 @@ func TestDistance(t *testing.T) {
 	}
 }
 
-func TestFirstCityReachableMoves(t *testing.T) {
+func TestReachableMoves(t *testing.T) {
 	tests := []struct {
-		ti   TravelInput
-		want []int
+		ti          TravelInput
+		fromCityNum int
+		want        []int
 	}{
-		{ti1, []int{2, 4}},
-		{ti2, []int{2, 3, 4}},
-		{ti3, nil},
+		{ti1, 1, []int{2, 4}},
+		{ti1, 6, []int{5, 7}},
+		{ti2, 1, []int{2, 3, 4}},
+		{ti3, 1, nil},
 	}
 	for idx, test := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			got := test.ti.ReachableMoves(NewTravelHistory(test.ti.RouteStart), &map[int]bool{})
+			got := test.ti.ReachableMoves(NewTravelHistory(test.fromCityNum), &map[int]bool{test.fromCityNum: true})
 			sort.Sort(sort.IntSlice{})
 			want := test.want
 			if !reflect.DeepEqual(got, want) {
