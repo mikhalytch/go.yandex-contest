@@ -167,18 +167,23 @@ func TestCalcTravel(t *testing.T) {
 		{ReadInput(strings.NewReader(zeroSpeed1)), aZeroSpeed1},
 		{ReadInput(strings.NewReader(zeroSpeed2)), aZeroSpeed2},
 	}
-	for idx, test := range tests {
-		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			for _, s := range swapped {
-				t.Run(fmt.Sprintf("swapped:%v", s), func(t *testing.T) {
-					data := test.in
-					if data != nil && s {
-						data.RouteFinish, data.RouteStart = data.RouteStart, data.RouteFinish
-					}
-					got := CalcTravel(data)
-					want := test.out
-					if got != want {
-						t.Fatalf("Got %d paths, want %d", got, want)
+	recursion := []bool{true, false}
+	for _, r := range recursion {
+		t.Run(fmt.Sprintf("recursive:%v", r), func(t *testing.T) {
+			for idx, test := range tests {
+				t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+					for _, s := range swapped {
+						t.Run(fmt.Sprintf("swapped:%v", s), func(t *testing.T) {
+							data := test.in
+							if data != nil && s {
+								data.RouteFinish, data.RouteStart = data.RouteStart, data.RouteFinish
+							}
+							got := CalcTravel(data, r)
+							want := test.out
+							if got != want {
+								t.Fatalf("Got %d paths, want %d", got, want)
+							}
+						})
 					}
 				})
 			}

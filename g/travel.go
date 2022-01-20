@@ -70,7 +70,7 @@ func (a *MinAgg) getResult() Length {
 
 func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) Length {
 	ma := td.NewMinAgg()
-	td.recTravel(ma, initial, 0, 0, &map[CityNumber]bool{td.RouteStart: true}, &map[CityNumber]Length{})
+	td.recTravel(ma, initial, 0, 0, &map[CityNumber]bool{initial.current: true}, &map[CityNumber]Length{})
 	return ma.getResult()
 }
 func (td *TravelInput) recTravel(
@@ -104,6 +104,26 @@ func (td *TravelInput) recTravel(
 		th = push.pop(cur)
 	}
 }
+func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) Length {
+	filter := &map[CityNumber]bool{initial.current: true}
+	curStepNodes := []TravelHistory{*initial}
+	for tLength := Length(0); len(curStepNodes) != 0; tLength++ {
+		var nextStepPreparation []TravelHistory // will gather all candidates for next tree level, then loop
+		for _, curStepNode := range curStepNodes {
+			rFilter := copyMap(filter)
+			(*rFilter)[curStepNode.current] = true
+			moves := td.ReachableMoves(&curStepNode, rFilter)
+			for _, move := range moves {
+				if move == td.RouteFinish {
+					return tLength + 1
+				}
+				nextStepPreparation = append(nextStepPreparation, *curStepNode.copy().push(move))
+			}
+		}
+		curStepNodes = nextStepPreparation
+	}
+	return -1 // nothing found
+}
 
 func NewTravelHistory(cur CityNumber) *TravelHistory {
 	return &TravelHistory{&map[CityNumber]bool{}, cur}
@@ -125,6 +145,7 @@ func (t *TravelHistory) push(move CityNumber) *TravelHistory {
 	t.current = move
 	return t
 }
+func (t *TravelHistory) copy() *TravelHistory { return &TravelHistory{copyMap(t.prevM), t.current} }
 func (t *TravelHistory) pop(cur CityNumber) *TravelHistory {
 	delete(*t.prevM, cur)
 	t.current = cur
@@ -145,17 +166,21 @@ func (cc CityCoordinates) distanceTo(a CityCoordinates) Dist {
 }
 
 // CalcTravel returns travel length on result found, -1 on no result
-func CalcTravel(in *TravelInput) Length {
+func CalcTravel(in *TravelInput, recursive bool) Length {
 	if in == nil || !in.Contains(in.RouteStart) || !in.Contains(in.RouteFinish) {
 		return -1
 	}
 	initial := NewTravelHistory(in.RouteStart)
-	return in.TravelLengthRecursive(initial)
+	if recursive {
+		return in.TravelLengthRecursive(initial)
+	} else {
+		return in.TravelLengthStepped(initial)
+	}
 }
 
 func Travel(reader io.Reader, writer io.Writer) {
 	input := ReadInput(reader)
-	length := CalcTravel(input)
+	length := CalcTravel(input, false)
 	_, _ = fmt.Fprintf(writer, "%d", length)
 }
 func ReadInput(reader io.Reader) *TravelInput {
