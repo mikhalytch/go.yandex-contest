@@ -78,10 +78,9 @@ var (
 			{2, -1},
 			{2, 1},
 		},
-		MaxUnRefuelled:    2,
-		RouteStart:        1,
-		RouteFinish:       3,
-		FinishCoordinates: NewCityCoordinates(2, 2),
+		MaxUnRefuelled: 2,
+		RouteStart:     1,
+		RouteFinish:    3,
 	}
 	ti2 = TravelInput{
 		[]CityCoordinates{
@@ -93,7 +92,6 @@ var (
 		2,
 		1,
 		4,
-		NewCityCoordinates(1, 1),
 	}
 	ti3 = TravelInput{
 		[]CityCoordinates{
@@ -105,7 +103,6 @@ var (
 		1,
 		1,
 		4,
-		NewCityCoordinates(2, 2),
 	}
 )
 
@@ -131,6 +128,7 @@ func TestReadInput(t *testing.T) {
 }
 
 func TestCalcTravel(t *testing.T) {
+	swapped := []bool{true, false}
 	tests := []struct {
 		in  *TravelInput
 		out int
@@ -144,10 +142,18 @@ func TestCalcTravel(t *testing.T) {
 	}
 	for idx, test := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			got := CalcTravel(test.in)
-			want := test.out
-			if got != want {
-				t.Fatalf("Got %d paths, want %d", got, want)
+			for _, s := range swapped {
+				t.Run(fmt.Sprintf("swapped:%v", s), func(t *testing.T) {
+					data := test.in
+					if data != nil && s {
+						data.RouteFinish, data.RouteStart = data.RouteStart, data.RouteFinish
+					}
+					got := CalcTravel(data)
+					want := test.out
+					if got != want {
+						t.Fatalf("Got %d paths, want %d", got, want)
+					}
+				})
 			}
 		})
 	}

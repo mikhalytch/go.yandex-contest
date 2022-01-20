@@ -14,11 +14,10 @@ func main() {
 }
 
 type TravelInput struct {
-	Cities            []CityCoordinates
-	MaxUnRefuelled    int
-	RouteStart        int
-	RouteFinish       int
-	FinishCoordinates CityCoordinates
+	Cities         []CityCoordinates
+	MaxUnRefuelled int
+	RouteStart     int
+	RouteFinish    int
 }
 
 func (td *TravelInput) Contains(i int) bool { return i > 0 && i <= len(td.Cities) }
@@ -194,7 +193,6 @@ func ReadInput(reader io.Reader) *TravelInput {
 			}
 			result.RouteStart = s
 			result.RouteFinish = e
-			result.FinishCoordinates = result.Cities[e-1]
 		} else {
 			return nil
 		}
