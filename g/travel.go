@@ -25,7 +25,7 @@ type TravelInput struct {
 }
 
 func (td *TravelInput) Contains(i CityNumber) bool { return i > 0 && int(i) <= len(td.Cities) }
-func (td *TravelInput) ReachableMovesR(th *TravelHistory, filter *map[CityNumber]bool) []CityNumber {
+func (td *TravelInput) ReachableMoves(th *TravelHistory, filter *map[CityNumber]bool) []CityNumber {
 	fromIdx := int(th.current - 1)
 	var res []CityNumber
 	for idx := 0; idx < len(td.Cities); idx++ {
@@ -33,31 +33,12 @@ func (td *TravelInput) ReachableMovesR(th *TravelHistory, filter *map[CityNumber
 		if (*filter)[num] {
 			continue
 		}
-		if td.IsCityReachable(td.Cities[idx], td.Cities[fromIdx]) {
-			// check if we have a loop: history containing reachable city means we could come here earlier,
-			// and current path is inefficient
-			if th.contains(num) {
-				return nil
-			}
-			res = append(res, num)
-		}
-	}
-	return res
-}
-func (td *TravelInput) ReachableMovesS(th *TravelHistory, filter *map[CityNumber]bool) []CityNumber {
-	fromIdx := int(th.current - 1)
-	var res []CityNumber
-	for idx := 0; idx < len(td.Cities); idx++ {
-		num := CityNumber(idx + 1)
-		if (*filter)[num] {
+		// check if we have a loop: history containing reachable city means we could come here earlier,
+		// and current path is inefficient
+		if th.contains(num) {
 			continue
 		}
 		if td.IsCityReachable(td.Cities[idx], td.Cities[fromIdx]) {
-			// check if we have a loop: history containing reachable city means we could come here earlier,
-			// and current path is inefficient
-			//if th.contains(num) {
-			//	continue
-			//}
 			res = append(res, num)
 		}
 	}
@@ -75,7 +56,7 @@ type MinAgg struct {
 }
 
 func (a *MinAgg) registerCandidate(length Length) {
-	if a.knownMinLength > length {
+	if a.knownMinLength >= length {
 		a.knownMinLength = length
 		a.set = true
 	}
@@ -98,20 +79,16 @@ func (td *TravelInput) recTravel(
 ) {
 	if th.current == td.RouteFinish {
 		ma.registerCandidate(curLen)
-		return
 	}
 	if curLen >= ma.knownMinLength {
 		return
 	}
 	if l, ok := (*visitLength)[th.current]; !ok || curLen < l {
 		(*visitLength)[th.current] = curLen
-	} else if ok && l < curLen {
+	} else if ok && l <= curLen {
 		return
 	}
-	rFilter := copyMap(filter)
-	(*rFilter)[prev] = true
-	(*rFilter)[th.current] = true
-	moves := td.ReachableMovesR(th, rFilter)
+	moves := td.ReachableMoves(th, filter)
 	if len(moves) == 0 {
 		(*filter)[th.current] = true
 	}
@@ -129,9 +106,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) Length {
 	for tLength := Length(0); len(curStepNodes) != 0; tLength++ {
 		var nextStepPreparation []TravelHistory // will gather all candidates for next tree level, then loop
 		for _, curStepNode := range curStepNodes {
-			rFilter := copyMap(filter)
-			(*rFilter)[curStepNode.current] = true
-			moves := td.ReachableMovesS(&curStepNode, rFilter)
+			moves := td.ReachableMoves(&curStepNode, filter)
 			for _, move := range moves {
 				if move == td.RouteFinish {
 					return tLength + 1
@@ -199,7 +174,7 @@ func CalcTravel(in *TravelInput, recursive bool) Length {
 
 func Travel(reader io.Reader, writer io.Writer) {
 	input := ReadInput(reader)
-	length := CalcTravel(input, input != nil && len(input.Cities) > 999)
+	length := CalcTravel(input, true || input != nil && len(input.Cities) > 999)
 	_, _ = fmt.Fprintf(writer, "%d", length)
 }
 func ReadInput(reader io.Reader) *TravelInput {
