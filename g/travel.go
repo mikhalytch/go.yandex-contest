@@ -109,8 +109,8 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) Length {
 	filter := &map[CityNumber]bool{initial.current: true}
 	curStepNodes := []TravelHistory{*initial}
 	for tLength := Length(0); len(curStepNodes) != 0; tLength++ {
-		var nextStepPreparation []TravelHistory // will gather all candidates for next tree level, then loop
-		for _, curStepNode := range curStepNodes {
+		var nextStepPreparation []TravelHistory    // will gather all candidates for next tree level, then loop
+		for _, curStepNode := range curStepNodes { // todo use visitLength *map[CityNumber]Length heuristic
 			rFilter := copyMap(filter)
 			(*rFilter)[curStepNode.current] = true
 			if curStepNode.getPrev() != nil {
@@ -121,7 +121,8 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) Length {
 				if move == td.RouteFinish {
 					return tLength + 1
 				}
-				nextStepPreparation = append(nextStepPreparation, *curStepNode.copy().push(move))
+				push := *curStepNode.copy().push(move)
+				nextStepPreparation = append(nextStepPreparation, push)
 			}
 		}
 		curStepNodes = nextStepPreparation
@@ -150,7 +151,8 @@ func (t *TravelHistory) contains(s CityNumber) bool {
 }
 func (t *TravelHistory) push(move CityNumber) *TravelHistory {
 	(*t.prevM)[t.current] = true
-	t.prev = &t.current
+	c := t.current
+	t.prev = &c
 	t.current = move
 	return t
 }
