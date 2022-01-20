@@ -180,12 +180,12 @@ func TestFirstCityReachableMoves(t *testing.T) {
 		want []int
 	}{
 		{ti1, []int{2, 4}},
-		{ti2, []int{4, 3, 2}},
+		{ti2, []int{2, 3, 4}},
 		{ti3, nil},
 	}
 	for idx, test := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			got := test.ti.ReachableMoves(NewTravelHistory(test.ti.RouteStart), map[int]bool{})
+			got := test.ti.ReachableMoves(NewTravelHistory(test.ti.RouteStart), &map[int]bool{})
 			sort.Sort(sort.IntSlice{})
 			want := test.want
 			if !reflect.DeepEqual(got, want) {
