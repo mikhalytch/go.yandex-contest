@@ -53,7 +53,7 @@ const (
 2 1
 2
 5 5`
-	az         = 0
+	az         = -1
 	zeroSpeed1 = `7
 0 0
 0 2
@@ -64,7 +64,7 @@ const (
 2 1
 0
 5 5`
-	aZeroSpeed1 = 0
+	aZeroSpeed1 = -1
 	zeroSpeed2  = `7
 0 0
 0 2

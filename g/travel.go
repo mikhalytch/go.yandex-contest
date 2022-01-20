@@ -163,7 +163,7 @@ func ReadInput(reader io.Reader) *TravelInput {
 		lineText := scanner.Text()
 		if lineIdx == 0 {
 			num, err := strconv.Atoi(lineText)
-			if err != nil || num <= 0 {
+			if err != nil || num < 2 || num > 1e3 {
 				return nil
 			}
 			cAmt = num
@@ -174,12 +174,18 @@ func ReadInput(reader io.Reader) *TravelInput {
 				return nil
 			}
 			result.Cities = append(result.Cities, NewCityCoordinates(x, y))
+			if intAbs(x) > 1e9 || intAbs(y) > 1e9 {
+				return nil
+			}
 		} else if lineIdx == cAmt+1 {
 			num, err := strconv.Atoi(lineText)
 			if err != nil || num < 0 {
 				return nil
 			}
 			result.MaxUnRefuelled = num
+			if num < 1 || num > 2e9 {
+				return nil
+			}
 		} else if lineIdx == cAmt+2 {
 			var s, e int
 			scanned, err := fmt.Fscanf(strings.NewReader(lineText), "%d %d", &s, &e)
@@ -188,6 +194,9 @@ func ReadInput(reader io.Reader) *TravelInput {
 			}
 			result.RouteStart = s
 			result.RouteFinish = e
+			if s == e {
+				return nil
+			}
 		} else {
 			return nil
 		}
