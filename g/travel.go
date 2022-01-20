@@ -25,7 +25,7 @@ type TravelInput struct {
 }
 
 func (td *TravelInput) Contains(i CityNumber) bool { return i > 0 && int(i) <= len(td.Cities) }
-func (td *TravelInput) ReachableMoves(th *TravelHistory, filter *map[CityNumber]bool) []CityNumber {
+func (td *TravelInput) ReachableMovesR(th *TravelHistory, filter *map[CityNumber]bool) []CityNumber {
 	fromIdx := int(th.current - 1)
 	var res []CityNumber
 	for idx := 0; idx < len(td.Cities); idx++ {
@@ -39,6 +39,25 @@ func (td *TravelInput) ReachableMoves(th *TravelHistory, filter *map[CityNumber]
 			if th.contains(num) {
 				return nil
 			}
+			res = append(res, num)
+		}
+	}
+	return res
+}
+func (td *TravelInput) ReachableMovesS(th *TravelHistory, filter *map[CityNumber]bool) []CityNumber {
+	fromIdx := int(th.current - 1)
+	var res []CityNumber
+	for idx := 0; idx < len(td.Cities); idx++ {
+		num := CityNumber(idx + 1)
+		if (*filter)[num] {
+			continue
+		}
+		if td.IsCityReachable(td.Cities[idx], td.Cities[fromIdx]) {
+			// check if we have a loop: history containing reachable city means we could come here earlier,
+			// and current path is inefficient
+			//if th.contains(num) {
+			//	continue
+			//}
 			res = append(res, num)
 		}
 	}
@@ -92,7 +111,7 @@ func (td *TravelInput) recTravel(
 	rFilter := copyMap(filter)
 	(*rFilter)[prev] = true
 	(*rFilter)[th.current] = true
-	moves := td.ReachableMoves(th, rFilter)
+	moves := td.ReachableMovesR(th, rFilter)
 	if len(moves) == 0 {
 		(*filter)[th.current] = true
 	}
@@ -112,7 +131,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) Length {
 		for _, curStepNode := range curStepNodes {
 			rFilter := copyMap(filter)
 			(*rFilter)[curStepNode.current] = true
-			moves := td.ReachableMoves(&curStepNode, rFilter)
+			moves := td.ReachableMovesS(&curStepNode, rFilter)
 			for _, move := range moves {
 				if move == td.RouteFinish {
 					return tLength + 1
@@ -180,7 +199,7 @@ func CalcTravel(in *TravelInput, recursive bool) Length {
 
 func Travel(reader io.Reader, writer io.Writer) {
 	input := ReadInput(reader)
-	length := CalcTravel(input, false)
+	length := CalcTravel(input, input != nil && len(input.Cities) > 999)
 	_, _ = fmt.Fprintf(writer, "%d", length)
 }
 func ReadInput(reader io.Reader) *TravelInput {
