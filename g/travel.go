@@ -89,7 +89,9 @@ func (td *TravelInput) recTravel(
 		return
 	}
 	rFilter := copyMap(filter)
-	(*rFilter)[prev] = true
+	if th.getPrev() != nil {
+		(*rFilter)[*th.getPrev()] = true
+	}
 	(*rFilter)[th.current] = true
 	moves := td.ReachableMoves(th, rFilter)
 	if len(moves) == 0 {
@@ -100,7 +102,7 @@ func (td *TravelInput) recTravel(
 	for _, move := range moves {
 		push := th.push(move)
 		td.recTravel(ma, push, cur, nextLen, filter, visitLength)
-		th = push.pop(cur)
+		th = push.pop(prev)
 	}
 }
 func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) Length {
@@ -109,7 +111,12 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) Length {
 	for tLength := Length(0); len(curStepNodes) != 0; tLength++ {
 		var nextStepPreparation []TravelHistory // will gather all candidates for next tree level, then loop
 		for _, curStepNode := range curStepNodes {
-			moves := td.ReachableMoves(&curStepNode, filter)
+			rFilter := copyMap(filter)
+			(*rFilter)[curStepNode.current] = true
+			if curStepNode.getPrev() != nil {
+				(*rFilter)[*curStepNode.getPrev()] = true
+			}
+			moves := td.ReachableMoves(&curStepNode, rFilter)
 			for _, move := range moves {
 				if move == td.RouteFinish {
 					return tLength + 1
@@ -123,14 +130,18 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) Length {
 }
 
 func NewTravelHistory(cur CityNumber) *TravelHistory {
-	return &TravelHistory{&map[CityNumber]bool{}, cur}
+	return &TravelHistory{&map[CityNumber]bool{}, nil, cur}
 }
 
 type TravelHistory struct {
 	prevM   *map[CityNumber]bool
+	prev    *CityNumber
 	current CityNumber
 }
 
+func (t *TravelHistory) getPrev() *CityNumber {
+	return t.prev
+}
 func (t *TravelHistory) contains(s CityNumber) bool {
 	if t.current == s {
 		return true
@@ -139,13 +150,19 @@ func (t *TravelHistory) contains(s CityNumber) bool {
 }
 func (t *TravelHistory) push(move CityNumber) *TravelHistory {
 	(*t.prevM)[t.current] = true
+	t.prev = &t.current
 	t.current = move
 	return t
 }
-func (t *TravelHistory) copy() *TravelHistory { return &TravelHistory{copyMap(t.prevM), t.current} }
-func (t *TravelHistory) pop(cur CityNumber) *TravelHistory {
-	delete(*t.prevM, cur)
-	t.current = cur
+func (t *TravelHistory) copy() *TravelHistory {
+	return &TravelHistory{copyMap(t.prevM), t.prev, t.current}
+}
+func (t *TravelHistory) pop(prev CityNumber) *TravelHistory {
+	if t.prev != nil {
+		delete(*t.prevM, *t.prev)
+		t.current = *t.prev
+	}
+	t.prev = &prev
 	return t
 }
 
@@ -177,7 +194,7 @@ func CalcTravel(in *TravelInput, recursive bool) Length {
 
 func Travel(reader io.Reader, writer io.Writer) {
 	input := ReadInput(reader)
-	length := CalcTravel(input, true || input != nil && len(input.Cities) > 999)
+	length := CalcTravel(input, false && input != nil && len(input.Cities) > 999)
 	_, _ = fmt.Fprintf(writer, "%d", length)
 }
 func ReadInput(reader io.Reader) *TravelInput {
