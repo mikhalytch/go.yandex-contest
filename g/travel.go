@@ -7,11 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 )
-
-// even 100 is enough to have test #17 depth-first (fails on recursive); test #21 has 1000 cities
-const test21citiesAmt = 1000
 
 func main() {
 	Travel(os.Stdin, os.Stdout)
@@ -25,18 +21,14 @@ type TravelInput struct {
 	FinishCoordinates CityCoordinates
 }
 
-func (td *TravelInput) contains(i int) bool { return i > 0 && i <= len(td.Cities) }
+func (td *TravelInput) Contains(i int) bool { return i > 0 && i <= len(td.Cities) }
 func (td *TravelInput) ReachableMoves(th *TravelHistory, filter *map[int]bool) []int {
-	// todo fixing #21
-	//if !td.contains(fromNum) {
-	//	return nil
-	//}
 	fromIdx := th.current - 1
 	fromCity := td.Cities[fromIdx]
 	var res []int
 	for idx := 0; idx < len(td.Cities); idx++ {
 		num := idx + 1
-		if idx != fromIdx && !(*filter)[num] && td.isCityReachable(td.Cities[idx], fromCity) {
+		if idx != fromIdx && !(*filter)[num] && td.IsCityReachable(td.Cities[idx], fromCity) {
 			// check if we have a loop: history containing reachable city means we could come here earlier,
 			// and current path is inefficient
 			if th.contains(num) {
@@ -47,39 +39,24 @@ func (td *TravelInput) ReachableMoves(th *TravelHistory, filter *map[int]bool) [
 	}
 	return res
 }
-func (td *TravelInput) isCityReachable(c CityCoordinates, fromCity CityCoordinates) bool {
+func (td *TravelInput) IsCityReachable(c CityCoordinates, fromCity CityCoordinates) bool {
 	return c.distanceTo(fromCity) <= td.MaxUnRefuelled
 }
 
-// todo fixing #21
-//func (td *TravelInput) cityByNum(n int) (CityCoordinates, bool) {
-//	if !td.contains(n) {
-//		return CityCoordinates{}, false
-//	}
-//	return td.Cities[n-1], true
-//}
-
-func NewMinAgg(td *TravelInput) *MinAgg {
-	return &MinAgg{len(td.Cities) - 1, false, sync.Mutex{}}
-}
+func NewMinAgg(td *TravelInput) *MinAgg { return &MinAgg{len(td.Cities) - 1, false} }
 
 type MinAgg struct {
 	knownMinLength int
 	set            bool
-	mu             sync.Mutex
 }
 
 func (a *MinAgg) registerCandidate(length int) {
 	if a.knownMinLength > length {
-		a.mu.Lock()
-		defer a.mu.Unlock()
 		a.knownMinLength = length
 		a.set = true
 	}
 }
 func (a *MinAgg) getResult() int {
-	a.mu.Lock()
-	defer a.mu.Unlock()
 	if a.set {
 		return a.knownMinLength
 	}
@@ -88,16 +65,7 @@ func (a *MinAgg) getResult() int {
 
 func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) int {
 	ma := NewMinAgg(td)
-	//rc := make(chan interface{})
-	//to := time.After(950 * time.Millisecond)
-	//go func() {
 	td.recTravel(ma, initial, 0, 0, &map[int]bool{td.RouteStart: true}, &map[int]int{})
-	//rc <- false
-	//}()
-	//select {
-	//case <-to:
-	//case <-rc:
-	//}
 	return ma.getResult()
 }
 func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, prev int, curLen int, filter *map[int]bool, visitLength *map[int]int) {
@@ -129,79 +97,6 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, prev int, curLen
 			break
 		}
 	}
-}
-func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
-	const test21gcEdgeMoves = 100
-	// --- rec case
-	usingRecursion := false
-	ma := NewMinAgg(td)
-	//wg := &sync.WaitGroup{}
-	doRecurseFromHere := func(ths []TravelHistory, curLen int, ma *MinAgg) {
-		for _, th := range ths {
-			td.recTravel(ma, &th, 0, curLen, &map[int]bool{} /*todo*/, &map[int]int{} /*todo*/)
-		}
-		//wg.Done()
-	}
-	// --- rec case: END
-	treeWidthNodes := []TravelHistory{*initial}
-	for tLength := 0; len(treeWidthNodes) != 0; tLength++ {
-		if len(treeWidthNodes) > 100000 {
-			//wg.Add(1)
-			//go doRecurseFromHere(treeWidthNodes[:9999], tLength, wg, ma)
-			//wg.Add(1)
-			//go doRecurseFromHere(treeWidthNodes[10000:19999], tLength, wg, ma)
-			//wg.Add(1)
-			//go doRecurseFromHere(treeWidthNodes[20000:29999], tLength, wg, ma)
-			//wg.Add(1)
-			//go doRecurseFromHere(treeWidthNodes[30000:39999], tLength, wg, ma)
-			//wg.Add(1)
-			//go doRecurseFromHere(treeWidthNodes[40000:49999], tLength, wg, ma)
-			//wg.Add(1)
-			//go doRecurseFromHere(treeWidthNodes[50000:], tLength, wg, ma)
-			//wg.Wait()
-			doRecurseFromHere(treeWidthNodes[:5000], tLength, ma)
-			return ma.getResult()
-		} else {
-			var nextTreeLevelWidthNodes []TravelHistory // will gather all candidates for next tree level, then loop
-			//for _, curStepNode := range treeWidthNodes {
-			for i := len(treeWidthNodes) - 1; i >= 0; i-- {
-				curStepNode := treeWidthNodes[i]
-				moves := td.ReachableMoves(&curStepNode, &map[int]bool{} /*todo*/)
-				if usingRecursion /*|| float64(len(moves)) > 1*test21gcEdgeMoves*/ { // need to use recursion (test #21)
-					usingRecursion = true
-					// todo cheat test21
-					//if ma.set /* && len(td.Cities) == test21citiesAmt*/ { // try to cheat, and return any result on hands
-					//	return ma.getResult()
-					//}
-					// todo test21 : try recursive
-					for i := 0; i < len(moves); i++ {
-						move := moves[i]
-						nextLen := tLength + 1
-						if move == td.RouteFinish { // in case we've met result during switch to recursive alg
-							ma.registerCandidate(nextLen)
-							break
-						}
-						//wg.Add(1)
-						td.recTravel(ma, curStepNode.push(move), 0, nextLen /*wg, false*/, &map[int]bool{} /*todo*/, &map[int]int{} /*todo*/)
-					}
-				} else {
-					for _, move := range moves {
-						if move == td.RouteFinish {
-							return tLength + 1
-						}
-						nextTreeLevelWidthNodes = append(nextTreeLevelWidthNodes, *curStepNode.push(move))
-					}
-				}
-			}
-			if usingRecursion {
-				//wg.Wait()
-				return ma.getResult()
-			} else {
-				treeWidthNodes = nextTreeLevelWidthNodes
-			}
-		}
-	}
-	return -1 // nothing found
 }
 
 func NewTravelHistory(cur int) *TravelHistory {
@@ -248,38 +143,26 @@ func (cc CityCoordinates) distanceTo(a CityCoordinates) int {
 }
 
 // CalcTravel returns travel length on result found, -1 on no result
-func CalcTravel(in *TravelInput, recursiveCalc bool) int {
+func CalcTravel(in *TravelInput) int {
 	if in == nil {
 		return -1
 	}
-	if !in.contains(in.RouteStart) {
+	if !in.Contains(in.RouteStart) {
 		return -1
 	}
-	if !in.contains(in.RouteFinish) {
+	if !in.Contains(in.RouteFinish) {
 		return -1
 	}
 	if in.RouteStart == in.RouteFinish {
 		return 0
 	}
 	initial := NewTravelHistory(in.RouteStart)
-	switch recursiveCalc {
-	case true:
-		return in.TravelLengthRecursive(initial)
-	default:
-		return in.TravelLengthStepped(initial)
-	}
+	return in.TravelLengthRecursive(initial)
 }
 
 func Travel(reader io.Reader, writer io.Writer) {
 	input := ReadInput(reader)
-	var length int
-	//if input == nil {
-	//	length = -1
-	//} else if len(input.Cities) >= 0 /*test21citiesAmt-1*/ {
-	length = CalcTravel(input, true)
-	//} else {
-	//	length = CalcTravel(input, false)
-	//}
+	length := CalcTravel(input)
 	_, _ = fmt.Fprintf(writer, "%d", length)
 }
 func ReadInput(reader io.Reader) *TravelInput {
@@ -323,32 +206,7 @@ func ReadInput(reader io.Reader) *TravelInput {
 	return result
 }
 
-//var distCache = make(map[CityCoordinates]map[CityCoordinates]int)
-
-func Distance(a, b CityCoordinates) int {
-	//av, aok := distCache[a]
-	//if !aok {
-	//	av = make(map[CityCoordinates]int)
-	//	distCache[a] = av
-	//}
-	//bv, bok := av[b]
-	//if !bok {
-	//	bv = intAbs(a.X-b.X) + intAbs(a.Y-b.Y)
-	//	av[b] = bv
-	//}
-	//b1v, b1ok := distCache[b]
-	//if !b1ok {
-	//	b1v = make(map[CityCoordinates]int)
-	//	distCache[b] = b1v
-	//}
-	//_, a1ok := b1v[a]
-	//if !a1ok {
-	//	b1v[a] = bv
-	//}
-	//return bv
-
-	return intAbs(a.X-b.X) + intAbs(a.Y-b.Y)
-}
+func Distance(a, b CityCoordinates) int { return intAbs(a.X-b.X) + intAbs(a.Y-b.Y) }
 func intAbs(a int) int {
 	if a < 0 {
 		return -a

@@ -85,7 +85,6 @@ var (
 		4,
 		NewCityCoordinates(2, 2),
 	}
-	recursive = []bool{true, false}
 )
 
 func TestReadInput(t *testing.T) {
@@ -121,14 +120,10 @@ func TestCalcTravel(t *testing.T) {
 	}
 	for idx, test := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			for _, r := range recursive {
-				t.Run(fmt.Sprintf("recursive:%v", r), func(t *testing.T) {
-					got := CalcTravel(test.in, r)
-					want := test.out
-					if got != want {
-						t.Fatalf("Got %d paths, want %d", got, want)
-					}
-				})
+			got := CalcTravel(test.in)
+			want := test.out
+			if got != want {
+				t.Fatalf("Got %d paths, want %d", got, want)
 			}
 		})
 	}
