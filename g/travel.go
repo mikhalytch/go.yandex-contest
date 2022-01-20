@@ -94,7 +94,7 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, prev int, curLen
 		cur := th.current
 		push := th.push(move)
 		td.recTravel(ma, push, cur, nextLen, filter, visitLength)
-		th = push.pop(move, cur)
+		th = push.pop(cur)
 	}
 }
 
@@ -122,8 +122,8 @@ func (t *TravelHistory) push(move int) *TravelHistory {
 	t.current = move
 	return t
 }
-func (t *TravelHistory) pop(move int, cur int) *TravelHistory {
-	delete(*t.prevM, move)
+func (t *TravelHistory) pop(cur int) *TravelHistory {
+	delete(*t.prevM, cur)
 	t.current = cur
 	return t
 }
