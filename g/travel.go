@@ -93,7 +93,7 @@ func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) int {
 	rc := make(chan interface{})
 	to := time.After(950 * time.Millisecond)
 	go func() {
-		td.recTravel(ma, initial, 0, map[int]bool{td.RouteStart: true})
+		td.recTravel(ma, initial, 0, map[int]bool{td.RouteStart: true}, map[int]int{})
 		rc <- false
 	}()
 	select {
@@ -102,8 +102,13 @@ func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) int {
 	}
 	return ma.getResult()
 }
-func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen int, filter map[int]bool) {
+func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen int, filter map[int]bool, visitLength map[int]int) {
 	nextLen := curLen + 1
+	if l, ok := visitLength[th.current]; !ok {
+		visitLength[th.current] = curLen
+	} else if ok && l <= curLen {
+		return
+	}
 	if nextLen >= ma.knownMinLength {
 		return
 	}
@@ -118,7 +123,7 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, curLen int, filt
 		}
 		cur := th.current
 		push := th.push(move)
-		td.recTravel(ma, push, nextLen, filter)
+		td.recTravel(ma, push, nextLen, filter, visitLength)
 		th = push.pop(move, cur)
 		if nextLen >= ma.knownMinLength { // in case last recursive call stored some new result to `ma`
 			break
@@ -133,7 +138,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 	//wg := &sync.WaitGroup{}
 	doRecurseFromHere := func(ths []TravelHistory, curLen int, ma *MinAgg) {
 		for _, th := range ths {
-			td.recTravel(ma, &th, curLen, map[int]bool{} /*todo*/)
+			td.recTravel(ma, &th, curLen, map[int]bool{} /*todo*/, map[int]int{} /*todo*/)
 		}
 		//wg.Done()
 	}
@@ -177,7 +182,7 @@ func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) int {
 							break
 						}
 						//wg.Add(1)
-						td.recTravel(ma, curStepNode.push(move), nextLen /*wg, false*/, map[int]bool{} /*todo*/)
+						td.recTravel(ma, curStepNode.push(move), nextLen /*wg, false*/, map[int]bool{} /*todo*/, map[int]int{} /*todo*/)
 					}
 				} else {
 					for _, move := range moves {
