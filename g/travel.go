@@ -71,13 +71,12 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, prev int, curLen
 		ma.registerCandidate(curLen)
 		return
 	}
+	if curLen >= ma.knownMinLength {
+		return
+	}
 	if l, ok := (*visitLength)[th.current]; !ok || curLen < l {
 		(*visitLength)[th.current] = curLen
 	} else if ok && l < curLen {
-		return
-	}
-	nextLen := curLen + 1
-	if nextLen >= ma.knownMinLength {
 		return
 	}
 	rFilter := copyMap(filter)
@@ -86,14 +85,12 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, prev int, curLen
 	if len(moves) == 0 {
 		(*filter)[th.current] = true
 	}
+	nextLen := curLen + 1
 	for _, move := range moves {
 		cur := th.current
 		push := th.push(move)
 		td.recTravel(ma, push, cur, nextLen, filter, visitLength)
 		th = push.pop(move, cur)
-		if nextLen >= ma.knownMinLength { // in case last recursive call stored some new result to `ma`
-			break
-		}
 	}
 }
 
@@ -145,12 +142,6 @@ func CalcTravel(in *TravelInput) int {
 	if in == nil {
 		return -1
 	}
-	if !in.Contains(in.RouteStart) {
-		return -1
-	}
-	if !in.Contains(in.RouteFinish) {
-		return -1
-	}
 	initial := NewTravelHistory(in.RouteStart)
 	return in.TravelLengthRecursive(initial)
 }
@@ -181,7 +172,7 @@ func ReadInput(reader io.Reader) *TravelInput {
 			result.Cities = append(result.Cities, NewCityCoordinates(x, y))
 		} else if lineIdx == cAmt+1 {
 			num, err := strconv.Atoi(lineText)
-			if err != nil {
+			if err != nil || num < 0 {
 				return nil
 			}
 			result.MaxUnRefuelled = num

@@ -53,8 +53,30 @@ const (
 2 1
 2
 5 5`
-	az  = 0
-	one = `7
+	az         = 0
+	zeroSpeed1 = `7
+0 0
+0 2
+2 2
+0 -2
+2 -2
+2 -1
+2 1
+0
+5 5`
+	aZeroSpeed1 = 0
+	zeroSpeed2  = `7
+0 0
+0 2
+2 2
+0 -2
+2 -2
+2 -1
+2 1
+0
+5 6`
+	aZeroSpeed2 = -1
+	one         = `7
 0 0
 0 2
 2 2
@@ -64,7 +86,9 @@ const (
 2 1
 2
 5 6`
-	aOne = 1
+	aOne   = 1
+	empty  = ``
+	aEmpty = -1
 )
 
 var (
@@ -139,6 +163,9 @@ func TestCalcTravel(t *testing.T) {
 		{ReadInput(strings.NewReader(incorrect)), ai},
 		{ReadInput(strings.NewReader(zero)), az},
 		{ReadInput(strings.NewReader(one)), aOne},
+		{ReadInput(strings.NewReader(empty)), aEmpty},
+		{ReadInput(strings.NewReader(zeroSpeed1)), aZeroSpeed1},
+		{ReadInput(strings.NewReader(zeroSpeed2)), aZeroSpeed2},
 	}
 	for idx, test := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
