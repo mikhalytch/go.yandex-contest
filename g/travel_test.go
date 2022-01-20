@@ -86,9 +86,32 @@ const (
 2 1
 2
 5 6`
-	aOne   = 1
-	empty  = ``
-	aEmpty = -1
+	aOne     = 1
+	empty    = ``
+	aEmpty   = -1
+	fullPath = `7
+0 0
+0 1
+0 2
+0 3
+0 4
+0 5
+0 6
+1
+1 7`
+	aFullPath = 6
+	loops     = `8
+0 0
+1 0
+1 1
+0 1
+0 2
+1 2
+1 3
+0 3
+1
+1 8`
+	aLoops = 3
 )
 
 var (
@@ -166,6 +189,8 @@ func TestCalcTravel(t *testing.T) {
 		{ReadInput(strings.NewReader(empty)), aEmpty},
 		{ReadInput(strings.NewReader(zeroSpeed1)), aZeroSpeed1},
 		{ReadInput(strings.NewReader(zeroSpeed2)), aZeroSpeed2},
+		{ReadInput(strings.NewReader(fullPath)), aFullPath},
+		{ReadInput(strings.NewReader(loops)), aLoops},
 	}
 	recursion := []bool{true, false}
 	for _, r := range recursion {
