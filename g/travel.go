@@ -33,22 +33,22 @@ func (td *TravelInput) ReachableMoves(th *TravelHistory, filter *map[CityNumber]
 		if (*filter)[num] {
 			continue
 		}
-		// check if we have a loop: history containing reachable city means we could come here earlier,
-		// and current path is inefficient
-		if th.contains(num) {
-			continue
-		}
-		if td.IsCityReachable(td.Cities[idx], td.Cities[fromIdx]) {
+		if td.IsCityReachable(td.Cities[fromIdx], td.Cities[idx]) {
+			// check if we have a loop: history containing reachable city means we could come here earlier,
+			// and current path is inefficient
+			if th.contains(num) {
+				return nil
+			}
 			res = append(res, num)
 		}
 	}
 	return res
 }
-func (td *TravelInput) IsCityReachable(c CityCoordinates, fromCity CityCoordinates) bool {
-	return c.distanceTo(fromCity) <= td.MaxUnRefuelled
+func (td *TravelInput) IsCityReachable(toCity CityCoordinates, fromCity CityCoordinates) bool {
+	return fromCity.distanceTo(toCity) <= td.MaxUnRefuelled
 }
 
-func (td *TravelInput) NewMinAgg() *MinAgg { return &MinAgg{Length(len(td.Cities) - 1), false} }
+func (td *TravelInput) NewMinAgg() *MinAgg { return &MinAgg{Length(len(td.Cities)) - 1, false} }
 
 type MinAgg struct {
 	knownMinLength Length
@@ -56,7 +56,7 @@ type MinAgg struct {
 }
 
 func (a *MinAgg) registerCandidate(length Length) {
-	if a.knownMinLength >= length {
+	if a.knownMinLength >= length { // test #7 has length == len(cities)-1
 		a.knownMinLength = length
 		a.set = true
 	}
@@ -88,7 +88,10 @@ func (td *TravelInput) recTravel(
 	} else if ok && l <= curLen {
 		return
 	}
-	moves := td.ReachableMoves(th, filter)
+	rFilter := copyMap(filter)
+	(*rFilter)[prev] = true
+	(*rFilter)[th.current] = true
+	moves := td.ReachableMoves(th, rFilter)
 	if len(moves) == 0 {
 		(*filter)[th.current] = true
 	}
@@ -196,7 +199,7 @@ func ReadInput(reader io.Reader) *TravelInput {
 				return nil
 			}
 			result.Cities = append(result.Cities, NewCityCoordinates(x, y))
-			if intAbs(x) > 1e9 || intAbs(y) > 1e9 {
+			if intAbs(x) > 1e9 || intAbs(y) > 1e9 { // test #21 has 1e3 cities
 				return nil
 			}
 		} else if lineIdx == cAmt+1 {
