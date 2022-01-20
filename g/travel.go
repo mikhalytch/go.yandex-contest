@@ -13,6 +13,8 @@ type Dist int
 type CityNumber int
 type Length int
 
+const recursiveTravelAlgorithm = false
+
 func main() {
 	Travel(os.Stdin, os.Stdout)
 }
@@ -68,14 +70,31 @@ func (a *MinAgg) getResult() Length {
 	return -1
 }
 
+func NewVisitLengthRegistrar() *VisitLengthRegistrar {
+	return &VisitLengthRegistrar{map[CityNumber]Length{}}
+}
+
+type VisitLengthRegistrar struct {
+	lengths map[CityNumber]Length
+}
+
+func (vlr *VisitLengthRegistrar) registerForShortness(num CityNumber, reg Length) bool {
+	if l, ok := vlr.lengths[num]; !ok || reg < l {
+		vlr.lengths[num] = reg
+		return true
+	}
+	// else if ok && l <= reg
+	return false
+}
+
 func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) Length {
 	ma := td.NewMinAgg()
-	td.recTravel(ma, initial, 0, 0, &map[CityNumber]bool{initial.current: true}, &map[CityNumber]Length{})
+	td.recTravel(ma, initial, 0, 0, &map[CityNumber]bool{initial.current: true}, NewVisitLengthRegistrar())
 	return ma.getResult()
 }
 func (td *TravelInput) recTravel(
 	ma *MinAgg, th *TravelHistory, prev CityNumber, curLen Length,
-	filter *map[CityNumber]bool, visitLength *map[CityNumber]Length,
+	filter *map[CityNumber]bool, vlr *VisitLengthRegistrar,
 ) {
 	if th.current == td.RouteFinish {
 		ma.registerCandidate(curLen)
@@ -83,9 +102,7 @@ func (td *TravelInput) recTravel(
 	if curLen >= ma.knownMinLength {
 		return
 	}
-	if l, ok := (*visitLength)[th.current]; !ok || curLen < l {
-		(*visitLength)[th.current] = curLen
-	} else if ok && l <= curLen {
+	if !vlr.registerForShortness(th.current, curLen) {
 		return
 	}
 	rFilter := copyMap(filter)
@@ -101,16 +118,20 @@ func (td *TravelInput) recTravel(
 	cur := th.current
 	for _, move := range moves {
 		push := th.push(move)
-		td.recTravel(ma, push, cur, nextLen, filter, visitLength)
+		td.recTravel(ma, push, cur, nextLen, filter, vlr)
 		th = push.pop(prev)
 	}
 }
 func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) Length {
 	filter := &map[CityNumber]bool{initial.current: true}
+	vlr := NewVisitLengthRegistrar()
 	curStepNodes := []TravelHistory{*initial}
 	for tLength := Length(0); len(curStepNodes) != 0; tLength++ {
-		var nextStepPreparation []TravelHistory    // will gather all candidates for next tree level, then loop
-		for _, curStepNode := range curStepNodes { // todo use visitLength *map[CityNumber]Length heuristic
+		var nextStepPreparation []TravelHistory // will gather all candidates for next tree level, then loop
+		for _, curStepNode := range curStepNodes {
+			if !vlr.registerForShortness(curStepNode.current, tLength) {
+				continue
+			}
 			rFilter := copyMap(filter)
 			(*rFilter)[curStepNode.current] = true
 			if curStepNode.getPrev() != nil {
@@ -196,7 +217,7 @@ func CalcTravel(in *TravelInput, recursive bool) Length {
 
 func Travel(reader io.Reader, writer io.Writer) {
 	input := ReadInput(reader)
-	length := CalcTravel(input, false && input != nil && len(input.Cities) > 999)
+	length := CalcTravel(input, recursiveTravelAlgorithm)
 	_, _ = fmt.Fprintf(writer, "%d", length)
 }
 func ReadInput(reader io.Reader) *TravelInput {
