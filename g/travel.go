@@ -13,7 +13,7 @@ type Dist int
 type CityNumber int
 type Length int
 
-const recursiveTravelAlgorithm = false
+const depthFirstTravelSearch = false
 
 func main() {
 	Travel(os.Stdin, os.Stdout)
@@ -87,7 +87,7 @@ func (vlr *VisitLengthRegistrar) registerForShortness(num CityNumber, reg Length
 	return false
 }
 
-func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) Length {
+func (td *TravelInput) CalcTravelLengthDepthFirst(initial *TravelHistory) Length {
 	ma := td.NewMinAgg()
 	td.recTravel(ma, initial, 0, 0, &map[CityNumber]bool{initial.current: true}, NewVisitLengthRegistrar())
 	return ma.getResult()
@@ -122,31 +122,31 @@ func (td *TravelInput) recTravel(
 		th = push.pop(prev)
 	}
 }
-func (td *TravelInput) TravelLengthStepped(initial *TravelHistory) Length {
+func (td *TravelInput) CalcTravelLengthBreadthFirst(initial *TravelHistory) Length {
 	filter := &map[CityNumber]bool{initial.current: true}
 	vlr := NewVisitLengthRegistrar()
-	curStepNodes := []TravelHistory{*initial}
-	for tLength := Length(0); len(curStepNodes) != 0; tLength++ {
-		var nextStepPreparation []TravelHistory // will gather all candidates for next tree level, then loop
-		for _, curStepNode := range curStepNodes {
-			if !vlr.registerForShortness(curStepNode.current, tLength) {
+	curLevelNodes := []TravelHistory{*initial}
+	for level := Length(0); len(curLevelNodes) != 0; level++ {
+		var nodesForNextLevel []TravelHistory // will gather all candidates for next tree level, then loop
+		for _, curLevelNode := range curLevelNodes {
+			if !vlr.registerForShortness(curLevelNode.current, level) {
 				continue
 			}
 			rFilter := copyMap(filter)
-			(*rFilter)[curStepNode.current] = true
-			if curStepNode.getPrev() != nil {
-				(*rFilter)[*curStepNode.getPrev()] = true
+			(*rFilter)[curLevelNode.current] = true
+			if curLevelNode.getPrev() != nil {
+				(*rFilter)[*curLevelNode.getPrev()] = true
 			}
-			moves := td.ReachableMoves(&curStepNode, rFilter)
+			moves := td.ReachableMoves(&curLevelNode, rFilter)
 			for _, move := range moves {
 				if move == td.RouteFinish {
-					return tLength + 1
+					return level + 1
 				}
-				push := *curStepNode.copy().push(move)
-				nextStepPreparation = append(nextStepPreparation, push)
+				push := *curLevelNode.copy().push(move)
+				nodesForNextLevel = append(nodesForNextLevel, push)
 			}
 		}
-		curStepNodes = nextStepPreparation
+		curLevelNodes = nodesForNextLevel
 	}
 	return -1 // nothing found
 }
@@ -203,21 +203,21 @@ func (cc CityCoordinates) distanceTo(a CityCoordinates) Dist {
 }
 
 // CalcTravel returns travel length on result found, -1 on no result
-func CalcTravel(in *TravelInput, recursive bool) Length {
+func CalcTravel(in *TravelInput, depthFirst bool) Length {
 	if in == nil || !in.Contains(in.RouteStart) || !in.Contains(in.RouteFinish) {
 		return -1
 	}
 	initial := NewTravelHistory(in.RouteStart)
-	if recursive {
-		return in.TravelLengthRecursive(initial)
+	if depthFirst {
+		return in.CalcTravelLengthDepthFirst(initial)
 	} else {
-		return in.TravelLengthStepped(initial)
+		return in.CalcTravelLengthBreadthFirst(initial)
 	}
 }
 
 func Travel(reader io.Reader, writer io.Writer) {
 	input := ReadInput(reader)
-	length := CalcTravel(input, recursiveTravelAlgorithm)
+	length := CalcTravel(input, depthFirstTravelSearch)
 	_, _ = fmt.Fprintf(writer, "%d", length)
 }
 func ReadInput(reader io.Reader) *TravelInput {
