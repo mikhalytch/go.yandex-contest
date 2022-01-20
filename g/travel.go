@@ -118,11 +118,7 @@ func (t *TravelHistory) contains(s CityNumber) bool {
 	if t.current == s {
 		return true
 	}
-	if len(*t.prevM) == 0 {
-		return false
-	}
-	_, ok := (*t.prevM)[s]
-	return ok
+	return (*t.prevM)[s]
 }
 func (t *TravelHistory) push(move CityNumber) *TravelHistory {
 	(*t.prevM)[t.current] = true
@@ -150,7 +146,7 @@ func (cc CityCoordinates) distanceTo(a CityCoordinates) Dist {
 
 // CalcTravel returns travel length on result found, -1 on no result
 func CalcTravel(in *TravelInput) Length {
-	if in == nil {
+	if in == nil || !in.Contains(in.RouteStart) || !in.Contains(in.RouteFinish) {
 		return -1
 	}
 	initial := NewTravelHistory(in.RouteStart)
