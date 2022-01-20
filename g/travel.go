@@ -9,23 +9,27 @@ import (
 	"strings"
 )
 
+type Dist int
+type CityNumber int
+type Length int
+
 func main() {
 	Travel(os.Stdin, os.Stdout)
 }
 
 type TravelInput struct {
 	Cities         []CityCoordinates
-	MaxUnRefuelled int
-	RouteStart     int
-	RouteFinish    int
+	MaxUnRefuelled Dist
+	RouteStart     CityNumber
+	RouteFinish    CityNumber
 }
 
-func (td *TravelInput) Contains(i int) bool { return i > 0 && i <= len(td.Cities) }
-func (td *TravelInput) ReachableMoves(th *TravelHistory, filter *map[int]bool) []int {
-	fromIdx := th.current - 1
-	var res []int
+func (td *TravelInput) Contains(i CityNumber) bool { return i > 0 && int(i) <= len(td.Cities) }
+func (td *TravelInput) ReachableMoves(th *TravelHistory, filter *map[CityNumber]bool) []CityNumber {
+	fromIdx := int(th.current - 1)
+	var res []CityNumber
 	for idx := 0; idx < len(td.Cities); idx++ {
-		num := idx + 1
+		num := CityNumber(idx + 1)
 		if (*filter)[num] {
 			continue
 		}
@@ -44,32 +48,35 @@ func (td *TravelInput) IsCityReachable(c CityCoordinates, fromCity CityCoordinat
 	return c.distanceTo(fromCity) <= td.MaxUnRefuelled
 }
 
-func (td *TravelInput) NewMinAgg() *MinAgg { return &MinAgg{len(td.Cities) - 1, false} }
+func (td *TravelInput) NewMinAgg() *MinAgg { return &MinAgg{Length(len(td.Cities) - 1), false} }
 
 type MinAgg struct {
-	knownMinLength int
+	knownMinLength Length
 	set            bool
 }
 
-func (a *MinAgg) registerCandidate(length int) {
+func (a *MinAgg) registerCandidate(length Length) {
 	if a.knownMinLength > length {
 		a.knownMinLength = length
 		a.set = true
 	}
 }
-func (a *MinAgg) getResult() int {
+func (a *MinAgg) getResult() Length {
 	if a.set {
 		return a.knownMinLength
 	}
 	return -1
 }
 
-func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) int {
+func (td *TravelInput) TravelLengthRecursive(initial *TravelHistory) Length {
 	ma := td.NewMinAgg()
-	td.recTravel(ma, initial, 0, 0, &map[int]bool{td.RouteStart: true}, &map[int]int{})
+	td.recTravel(ma, initial, 0, 0, &map[CityNumber]bool{td.RouteStart: true}, &map[CityNumber]Length{})
 	return ma.getResult()
 }
-func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, prev int, curLen int, filter *map[int]bool, visitLength *map[int]int) {
+func (td *TravelInput) recTravel(
+	ma *MinAgg, th *TravelHistory, prev CityNumber, curLen Length,
+	filter *map[CityNumber]bool, visitLength *map[CityNumber]Length,
+) {
 	if th.current == td.RouteFinish {
 		ma.registerCandidate(curLen)
 		return
@@ -98,16 +105,16 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, prev int, curLen
 	}
 }
 
-func NewTravelHistory(cur int) *TravelHistory {
-	return &TravelHistory{&map[int]bool{}, cur}
+func NewTravelHistory(cur CityNumber) *TravelHistory {
+	return &TravelHistory{&map[CityNumber]bool{}, cur}
 }
 
 type TravelHistory struct {
-	prevM   *map[int]bool
-	current int
+	prevM   *map[CityNumber]bool
+	current CityNumber
 }
 
-func (t *TravelHistory) contains(s int) bool {
+func (t *TravelHistory) contains(s CityNumber) bool {
 	if t.current == s {
 		return true
 	}
@@ -117,12 +124,12 @@ func (t *TravelHistory) contains(s int) bool {
 	_, ok := (*t.prevM)[s]
 	return ok
 }
-func (t *TravelHistory) push(move int) *TravelHistory {
+func (t *TravelHistory) push(move CityNumber) *TravelHistory {
 	(*t.prevM)[t.current] = true
 	t.current = move
 	return t
 }
-func (t *TravelHistory) pop(cur int) *TravelHistory {
+func (t *TravelHistory) pop(cur CityNumber) *TravelHistory {
 	delete(*t.prevM, cur)
 	t.current = cur
 	return t
@@ -137,12 +144,12 @@ type CityCoordinates struct {
 	Y int
 }
 
-func (cc CityCoordinates) distanceTo(a CityCoordinates) int {
+func (cc CityCoordinates) distanceTo(a CityCoordinates) Dist {
 	return Distance(cc, a)
 }
 
 // CalcTravel returns travel length on result found, -1 on no result
-func CalcTravel(in *TravelInput) int {
+func CalcTravel(in *TravelInput) Length {
 	if in == nil {
 		return -1
 	}
@@ -182,7 +189,7 @@ func ReadInput(reader io.Reader) *TravelInput {
 			if err != nil || num < 0 {
 				return nil
 			}
-			result.MaxUnRefuelled = num
+			result.MaxUnRefuelled = Dist(num)
 			if num < 1 || num > 2e9 {
 				return nil
 			}
@@ -192,8 +199,8 @@ func ReadInput(reader io.Reader) *TravelInput {
 			if err != nil || scanned != 2 {
 				return nil
 			}
-			result.RouteStart = s
-			result.RouteFinish = e
+			result.RouteStart = CityNumber(s)
+			result.RouteFinish = CityNumber(e)
 			if s == e {
 				return nil
 			}
@@ -204,15 +211,15 @@ func ReadInput(reader io.Reader) *TravelInput {
 	return result
 }
 
-func Distance(a, b CityCoordinates) int { return intAbs(a.X-b.X) + intAbs(a.Y-b.Y) }
+func Distance(a, b CityCoordinates) Dist { return Dist(intAbs(a.X-b.X) + intAbs(a.Y-b.Y)) }
 func intAbs(a int) int {
 	if a < 0 {
 		return -a
 	}
 	return a
 }
-func copyMap(s *map[int]bool) *map[int]bool {
-	r := make(map[int]bool)
+func copyMap(s *map[CityNumber]bool) *map[CityNumber]bool {
+	r := make(map[CityNumber]bool)
 	for u, b := range *s {
 		r[u] = b
 	}

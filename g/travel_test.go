@@ -155,7 +155,7 @@ func TestCalcTravel(t *testing.T) {
 	swapped := []bool{true, false}
 	tests := []struct {
 		in  *TravelInput
-		out int
+		out Length
 	}{
 		{ReadInput(strings.NewReader(ex1)), a1},
 		{ReadInput(strings.NewReader(ex2)), a2},
@@ -212,7 +212,7 @@ func TestTravel(t *testing.T) {
 func TestDistance(t *testing.T) {
 	tests := []struct {
 		a, b CityCoordinates
-		want int
+		want Dist
 	}{
 		{NewCityCoordinates(0, 0), NewCityCoordinates(2, 0), 2},
 		{NewCityCoordinates(0, 2), NewCityCoordinates(2, 2), 2},
@@ -229,17 +229,17 @@ func TestDistance(t *testing.T) {
 func TestReachableMoves(t *testing.T) {
 	tests := []struct {
 		ti          TravelInput
-		fromCityNum int
-		want        []int
+		fromCityNum CityNumber
+		want        []CityNumber
 	}{
-		{ti1, 1, []int{2, 4}},
-		{ti1, 6, []int{5, 7}},
-		{ti2, 1, []int{2, 3, 4}},
+		{ti1, 1, []CityNumber{2, 4}},
+		{ti1, 6, []CityNumber{5, 7}},
+		{ti2, 1, []CityNumber{2, 3, 4}},
 		{ti3, 1, nil},
 	}
 	for idx, test := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			got := test.ti.ReachableMoves(NewTravelHistory(test.fromCityNum), &map[int]bool{test.fromCityNum: true})
+			got := test.ti.ReachableMoves(NewTravelHistory(test.fromCityNum), &map[CityNumber]bool{test.fromCityNum: true})
 			sort.Sort(sort.IntSlice{})
 			want := test.want
 			if !reflect.DeepEqual(got, want) {
@@ -249,7 +249,7 @@ func TestReachableMoves(t *testing.T) {
 	}
 }
 
-func assertDistance(t *testing.T, got interface{}, want int) {
+func assertDistance(t *testing.T, got Dist, want Dist) {
 	t.Helper()
 	if got != want {
 		t.Fatalf("Got %d distance, want %d", got, want)
