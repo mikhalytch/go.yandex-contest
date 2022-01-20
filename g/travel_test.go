@@ -111,7 +111,25 @@ const (
 0 3
 1
 1 8`
-	aLoops = 3
+	aLoops  = 3
+	twoWays = `14
+0 0
+1 0
+2 0
+2 1
+0 1
+0 2
+1 2
+1 1
+3 1
+3 2
+1 3
+2 3
+3 3
+2 2
+1
+1 14`
+	aTwoWays = 4
 )
 
 var (
@@ -191,6 +209,7 @@ func TestCalcTravel(t *testing.T) {
 		{ReadInput(strings.NewReader(zeroSpeed2)), aZeroSpeed2},
 		{ReadInput(strings.NewReader(fullPath)), aFullPath},
 		{ReadInput(strings.NewReader(loops)), aLoops},
+		{ReadInput(strings.NewReader(twoWays)), aTwoWays},
 	}
 	recursion := []bool{true, false}
 	for _, r := range recursion {

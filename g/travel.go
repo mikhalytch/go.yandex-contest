@@ -13,7 +13,7 @@ type Dist int
 type CityNumber int
 type Length int
 
-const depthFirstTravelSearch = false
+const depthFirstTravelSearch = true
 
 func main() {
 	Travel(os.Stdin, os.Stdout)
