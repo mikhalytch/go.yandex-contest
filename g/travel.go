@@ -97,8 +97,8 @@ func (td *TravelInput) recTravel(
 		(*filter)[th.current] = true
 	}
 	nextLen := curLen + 1
+	cur := th.current
 	for _, move := range moves {
-		cur := th.current
 		push := th.push(move)
 		td.recTravel(ma, push, cur, nextLen, filter, visitLength)
 		th = push.pop(cur)
