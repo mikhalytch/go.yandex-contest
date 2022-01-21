@@ -57,12 +57,19 @@ type MinAgg struct {
 	set            bool
 }
 
-func (a *MinAgg) registerCandidate(th *TravelHistory) {
-	length := Length(len(*th.prevM))
-	if length < a.knownMinLength { // test #7 has length == len(cities)-1
-		a.knownMinLength = length
-		a.set = true
+func (a *MinAgg) isPossibleCandidate(th *TravelHistory, td *TravelInput) bool {
+	if th.current == td.RouteFinish {
+		length := Length(len(*th.prevM))
+		if length < a.knownMinLength { // test #7 has length == len(cities)-1
+			a.knownMinLength = length
+			a.set = true
+		}
+		return true
 	}
+	return false
+}
+func (a *MinAgg) isTooLong(th *TravelHistory) bool {
+	return a.set && Length(len(*th.prevM)) >= a.knownMinLength
 }
 func (a *MinAgg) getResult() Length {
 	if !a.set {
@@ -96,10 +103,7 @@ func (td *TravelInput) CalcTravelLengthDepthFirst(initial *TravelHistory) Length
 	return ma.getResult()
 }
 func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, vlr *VisitLengthRegistrar) {
-	if th.current == td.RouteFinish {
-		ma.registerCandidate(th) /*todo return*/
-	}
-	if Length(len(*th.prevM)) >= ma.knownMinLength {
+	if ma.isTooLong(th) || ma.isPossibleCandidate(th, td) {
 		return
 	}
 	if !vlr.registerForShortness(*th) {
