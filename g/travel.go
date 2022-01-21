@@ -28,16 +28,11 @@ type TravelInput struct {
 
 func (td *TravelInput) Contains(i CityNumber) bool { return i > 0 && int(i) <= len(td.Cities) }
 func (td *TravelInput) ReachableMoves(th TravelHistory) []CityNumber {
-	filter := map[CityNumber]bool{
-		td.RouteStart: true,
-		th.current:    true,
-		th.prev:       true,
-	}
 	fromIdx := int(th.current - 1)
 	var res []CityNumber
 	for idx := 0; idx < len(td.Cities); idx++ {
 		num := CityNumber(idx + 1)
-		if filter[num] {
+		if num == td.RouteStart || num == th.current || num == th.prev {
 			continue
 		}
 		if td.IsCityReachable(td.Cities[fromIdx], td.Cities[idx]) {
@@ -55,7 +50,7 @@ func (td *TravelInput) IsCityReachable(toCity CityCoordinates, fromCity CityCoor
 	return fromCity.distanceTo(toCity) <= td.MaxUnRefuelled
 }
 
-func (td *TravelInput) NewMinAgg() *MinAgg { return &MinAgg{Length(len(td.Cities)) - 1, false} }
+func (td *TravelInput) NewMinAgg() *MinAgg { return &MinAgg{Length(len(td.Cities)), false} }
 
 type MinAgg struct {
 	knownMinLength Length
@@ -64,7 +59,7 @@ type MinAgg struct {
 
 func (a *MinAgg) registerCandidate(th *TravelHistory) {
 	length := Length(len(*th.prevM))
-	if length <= a.knownMinLength { // test #7 has length == len(cities)-1
+	if length < a.knownMinLength { // test #7 has length == len(cities)-1
 		a.knownMinLength = length
 		a.set = true
 	}
