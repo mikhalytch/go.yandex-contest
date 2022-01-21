@@ -258,10 +258,10 @@ func TestTravel(t *testing.T) {
 	}
 }
 
-func TestDistance(t *testing.T) {
+func TestDistanceBetween(t *testing.T) {
 	tests := []struct {
 		a, b CityCoordinates
-		want Dist
+		want Distance
 	}{
 		{NewCityCoordinates(0, 0), NewCityCoordinates(2, 0), 2},
 		{NewCityCoordinates(0, 2), NewCityCoordinates(2, 2), 2},
@@ -269,8 +269,8 @@ func TestDistance(t *testing.T) {
 	}
 	for idx, test := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			assertDistance(t, Distance(test.a, test.b), test.want)
-			assertDistance(t, Distance(test.b, test.a), test.want)
+			assertDistance(t, DistanceBetween(test.a, test.b), test.want)
+			assertDistance(t, DistanceBetween(test.b, test.a), test.want)
 		})
 	}
 }
@@ -298,7 +298,7 @@ func TestReachableMoves(t *testing.T) {
 	}
 }
 
-func assertDistance(t *testing.T, got Dist, want Dist) {
+func assertDistance(t *testing.T, got Distance, want Distance) {
 	t.Helper()
 	if got != want {
 		t.Fatalf("Got %d distance, want %d", got, want)

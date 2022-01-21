@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-type Dist int
+type Distance int
 type CityNumber int
 type Length int
 
@@ -21,7 +21,7 @@ func main() {
 
 type TravelInput struct {
 	Cities         []CityCoordinates
-	MaxUnRefuelled Dist
+	MaxUnRefuelled Distance
 	RouteStart     CityNumber
 	RouteFinish    CityNumber
 }
@@ -58,16 +58,16 @@ type MinAgg struct {
 }
 
 func (a *MinAgg) registerCandidate(length Length) {
-	if a.knownMinLength >= length { // test #7 has length == len(cities)-1
+	if length <= a.knownMinLength { // test #7 has length == len(cities)-1
 		a.knownMinLength = length
 		a.set = true
 	}
 }
 func (a *MinAgg) getResult() Length {
-	if a.set {
-		return a.knownMinLength
+	if !a.set {
+		return -1
 	}
-	return -1
+	return a.knownMinLength
 }
 
 func NewVisitLengthRegistrar() *VisitLengthRegistrar {
@@ -89,35 +89,33 @@ func (vlr *VisitLengthRegistrar) registerForShortness(num CityNumber, reg Length
 
 func (td *TravelInput) CalcTravelLengthDepthFirst(initial *TravelHistory) Length {
 	ma := td.NewMinAgg()
-	td.recTravel(ma, initial, 0, 0, &map[CityNumber]bool{initial.current: true}, NewVisitLengthRegistrar())
+	td.recTravel(ma, initial, 0, &map[CityNumber]bool{initial.current: true}, NewVisitLengthRegistrar())
 	return ma.getResult()
 }
 func (td *TravelInput) recTravel(
-	ma *MinAgg, th *TravelHistory, prev CityNumber, curLen Length,
+	ma *MinAgg, th *TravelHistory, curLength Length,
 	filter *map[CityNumber]bool, vlr *VisitLengthRegistrar,
 ) {
 	if th.current == td.RouteFinish {
-		ma.registerCandidate(curLen)
+		ma.registerCandidate(curLength)
 	}
-	if curLen >= ma.knownMinLength {
+	if curLength >= ma.knownMinLength {
 		return
 	}
-	if !vlr.registerForShortness(th.current, curLen) {
+	if !vlr.registerForShortness(th.current, curLength) {
 		return
 	}
 	rFilter := copyMap(filter)
-	(*rFilter)[th.getPrev()] = true
+	(*rFilter)[th.prev] = true
 	(*rFilter)[th.current] = true
 	moves := td.ReachableMoves(th, rFilter)
 	if len(moves) == 0 {
 		(*filter)[th.current] = true
 	}
-	nextLen := curLen + 1
-	cur := th.current
+	nextLen := curLength + 1
 	for _, move := range moves {
-		push := th.push(move)
-		td.recTravel(ma, push, cur, nextLen, filter, vlr)
-		th = push.pop(prev)
+		push := th.copy().push(move)
+		td.recTravel(ma, push, nextLen, filter, vlr)
 	}
 }
 func (td *TravelInput) CalcTravelLengthBreadthFirst(initial *TravelHistory) Length {
@@ -132,7 +130,7 @@ func (td *TravelInput) CalcTravelLengthBreadthFirst(initial *TravelHistory) Leng
 			}
 			rFilter := copyMap(filter)
 			(*rFilter)[curLevelNode.current] = true
-			(*rFilter)[curLevelNode.getPrev()] = true
+			(*rFilter)[curLevelNode.prev] = true
 			moves := td.ReachableMoves(&curLevelNode, rFilter)
 			for _, move := range moves {
 				if move == td.RouteFinish {
@@ -157,9 +155,6 @@ type TravelHistory struct {
 	current CityNumber
 }
 
-func (t *TravelHistory) getPrev() CityNumber {
-	return t.prev
-}
 func (t *TravelHistory) contains(s CityNumber) bool {
 	if t.current == s {
 		return true
@@ -175,14 +170,6 @@ func (t *TravelHistory) push(move CityNumber) *TravelHistory {
 func (t *TravelHistory) copy() *TravelHistory {
 	return &TravelHistory{copyMap(t.prevM), t.prev, t.current}
 }
-func (t *TravelHistory) pop(prev CityNumber) *TravelHistory {
-	if t.prev != 0 {
-		delete(*t.prevM, t.prev)
-		t.current = t.prev
-	}
-	t.prev = prev
-	return t
-}
 
 func NewCityCoordinates(x, y int) CityCoordinates {
 	return CityCoordinates{X: x, Y: y}
@@ -193,8 +180,8 @@ type CityCoordinates struct {
 	Y int
 }
 
-func (cc CityCoordinates) distanceTo(a CityCoordinates) Dist {
-	return Distance(cc, a)
+func (cc CityCoordinates) distanceTo(a CityCoordinates) Distance {
+	return DistanceBetween(cc, a)
 }
 
 // CalcTravel returns travel length on result found, -1 on no result
@@ -242,7 +229,7 @@ func ReadInput(reader io.Reader) *TravelInput {
 			if err != nil || num < 0 {
 				return nil
 			}
-			result.MaxUnRefuelled = Dist(num)
+			result.MaxUnRefuelled = Distance(num)
 			if num < 1 || num > 2e9 {
 				return nil
 			}
@@ -264,7 +251,9 @@ func ReadInput(reader io.Reader) *TravelInput {
 	return result
 }
 
-func Distance(a, b CityCoordinates) Dist { return Dist(intAbs(a.X-b.X) + intAbs(a.Y-b.Y)) }
+func DistanceBetween(a, b CityCoordinates) Distance {
+	return Distance(intAbs(a.X-b.X) + intAbs(a.Y-b.Y))
+}
 func intAbs(a int) int {
 	if a < 0 {
 		return -a
