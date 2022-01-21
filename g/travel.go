@@ -199,8 +199,12 @@ func CalcTravel(in *TravelInput, depthFirst bool) Length {
 
 func Travel(reader io.Reader, writer io.Writer) {
 	input := ReadInput(reader)
-	length := CalcTravel(input, depthFirstTravelSearch)
-	_, _ = fmt.Fprintf(writer, "%d", length)
+	length1 := CalcTravel(input, depthFirstTravelSearch)
+	length2 := CalcTravel(input, !depthFirstTravelSearch)
+	if length2 < length1 { // I've had panic at test#21 => means depthFirstTravelSearch gives bigger result
+		panic("at the disco")
+	}
+	_, _ = fmt.Fprintf(writer, "%d", length1)
 }
 func ReadInput(reader io.Reader) *TravelInput {
 	scanner := bufio.NewScanner(reader)
