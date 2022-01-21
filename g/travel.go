@@ -27,7 +27,7 @@ type TravelInput struct {
 }
 
 func (td *TravelInput) Contains(i CityNumber) bool { return i > 0 && int(i) <= len(td.Cities) }
-func (td *TravelInput) ReachableMoves(th TravelHistory) []CityNumber {
+func (td *TravelInput) ReachableCities(th TravelHistory) []CityNumber {
 	fromIdx := int(th.current - 1)
 	var res []CityNumber
 	for idx := 0; idx < len(td.Cities); idx++ {
@@ -97,7 +97,7 @@ func (td *TravelInput) CalcTravelLengthDepthFirst(initial *TravelHistory) Length
 }
 func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, vlr *VisitLengthRegistrar) {
 	if th.current == td.RouteFinish {
-		ma.registerCandidate(th)
+		ma.registerCandidate(th) /*todo return*/
 	}
 	if Length(len(*th.prevM)) >= ma.knownMinLength {
 		return
@@ -105,7 +105,7 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, vlr *VisitLength
 	if !vlr.registerForShortness(*th) {
 		return
 	}
-	moves := td.ReachableMoves(*th)
+	moves := td.ReachableCities(*th)
 	for _, move := range moves {
 		push := th.copy().push(move)
 		td.recTravel(ma, push, vlr)
@@ -120,7 +120,7 @@ func (td *TravelInput) CalcTravelLengthBreadthFirst(initial *TravelHistory) Leng
 			if !vlr.registerForShortness(curLevelNode) {
 				continue
 			}
-			moves := td.ReachableMoves(curLevelNode)
+			moves := td.ReachableCities(curLevelNode)
 			for _, move := range moves {
 				if move == td.RouteFinish {
 					return level + 1
