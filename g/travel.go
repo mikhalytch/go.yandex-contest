@@ -86,15 +86,15 @@ type VisitLengthRegistrar struct {
 	lengths map[CityNumber]Length
 }
 
-func (vlr *VisitLengthRegistrar) registerForShortness(th TravelHistory) bool {
+func (vlr *VisitLengthRegistrar) isTooLong(th TravelHistory) bool {
 	num := th.current
-	reg := Length(len(*th.prevM))
-	if l, ok := vlr.lengths[num]; !ok || reg < l {
-		vlr.lengths[num] = reg
-		return true
+	candidateLength := Length(len(*th.prevM))
+	if savedLength, ok := vlr.lengths[num]; !ok || candidateLength < savedLength {
+		vlr.lengths[num] = candidateLength
+		return false
 	}
-	// else if ok && l <= reg
-	return false
+	// else if ok && savedLength <= candidateLength
+	return true
 }
 
 func (td *TravelInput) CalcTravelLengthDepthFirst(initial *TravelHistory) Length {
@@ -106,7 +106,7 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, vlr *VisitLength
 	if ma.isTooLong(th) || ma.isPossibleCandidate(th, td) {
 		return
 	}
-	if !vlr.registerForShortness(*th) {
+	if vlr.isTooLong(*th) {
 		return
 	}
 	moves := td.ReachableCities(*th)
@@ -121,7 +121,7 @@ func (td *TravelInput) CalcTravelLengthBreadthFirst(initial *TravelHistory) Leng
 	for level := Length(0); len(curLevelNodes) != 0; level++ {
 		var nodesForNextLevel []TravelHistory // will gather all candidates for next tree level, then loop
 		for _, curLevelNode := range curLevelNodes {
-			if !vlr.registerForShortness(curLevelNode) {
+			if vlr.isTooLong(curLevelNode) {
 				continue
 			}
 			moves := td.ReachableCities(curLevelNode)
