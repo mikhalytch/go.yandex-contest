@@ -13,7 +13,7 @@ type Distance int
 type CityNumber int
 type Length int
 
-const depthFirstTravelSearch = true
+const depthFirstTravelSearch = false
 
 func main() {
 	Travel(os.Stdin, os.Stdout)
@@ -110,13 +110,8 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, vlr *VisitLength
 		return
 	}
 	moves := td.ReachableCities(*th)
-	var prev *CityNumber
-	if th.prev == nil { /* todo work this out with set(*CN) */
-		prev = nil
-	} else {
-		p := *th.prev
-		prev = &p
-	}
+	var prev CityNumber
+	th.getPrev(&prev)
 	for _, move := range moves {
 		push := th.push(move)
 		td.recTravel(ma, push, vlr)
@@ -166,31 +161,35 @@ func (t *TravelHistory) contains(s CityNumber) bool {
 }
 func (t *TravelHistory) push(move CityNumber) *TravelHistory {
 	(*t.prevM)[t.current] = true
-	cur := t.current
+	cur := t.current /* todo copyCurTo(*) */
 	t.prev = &cur
 	t.current = move
 	return t
 }
 func (t *TravelHistory) copy() *TravelHistory {
-	var prev *CityNumber
-	if t.prev == nil { /*todo work with set(*TH)*/
-		prev = nil
-	} else {
-		p := *t.prev
-		prev = &p
-	}
-	return &TravelHistory{copyMap(t.prevM), prev, t.current}
+	var prev CityNumber
+	t.getPrev(&prev)
+	return &TravelHistory{copyMap(t.prevM), &prev, t.current}
 }
-func (t *TravelHistory) pop(prev *CityNumber) *TravelHistory {
+func (t *TravelHistory) pop(prev CityNumber) *TravelHistory {
 	delete(*t.prevM, t.current)
 	t.current = *t.prev
-	if prev == nil { /*todo work with set(*TH)*/
+	t.prev = &prev
+	return t
+}
+func (t *TravelHistory) setPrev(n *CityNumber) { /* todo rm */
+	if n == nil {
 		t.prev = nil
 	} else {
-		np := *prev
-		t.prev = &np
+		*t.prev = *n
 	}
-	return t
+}
+func (t *TravelHistory) getPrev(n *CityNumber) { /* todo copyPrevTo(*) */
+	if t.prev == nil {
+		n = nil
+	} else {
+		*n = *t.prev
+	}
 }
 
 func NewCityCoordinates(x, y int) CityCoordinates {
