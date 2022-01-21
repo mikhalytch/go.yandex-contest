@@ -106,9 +106,7 @@ func (td *TravelInput) recTravel(
 		return
 	}
 	rFilter := copyMap(filter)
-	if th.getPrev() != nil {
-		(*rFilter)[*th.getPrev()] = true
-	}
+	(*rFilter)[th.getPrev()] = true
 	(*rFilter)[th.current] = true
 	moves := td.ReachableMoves(th, rFilter)
 	if len(moves) == 0 {
@@ -134,9 +132,7 @@ func (td *TravelInput) CalcTravelLengthBreadthFirst(initial *TravelHistory) Leng
 			}
 			rFilter := copyMap(filter)
 			(*rFilter)[curLevelNode.current] = true
-			if curLevelNode.getPrev() != nil {
-				(*rFilter)[*curLevelNode.getPrev()] = true
-			}
+			(*rFilter)[curLevelNode.getPrev()] = true
 			moves := td.ReachableMoves(&curLevelNode, rFilter)
 			for _, move := range moves {
 				if move == td.RouteFinish {
@@ -152,16 +148,16 @@ func (td *TravelInput) CalcTravelLengthBreadthFirst(initial *TravelHistory) Leng
 }
 
 func NewTravelHistory(cur CityNumber) *TravelHistory {
-	return &TravelHistory{&map[CityNumber]bool{}, nil, cur}
+	return &TravelHistory{&map[CityNumber]bool{}, 0, cur}
 }
 
 type TravelHistory struct {
 	prevM   *map[CityNumber]bool
-	prev    *CityNumber
+	prev    CityNumber
 	current CityNumber
 }
 
-func (t *TravelHistory) getPrev() *CityNumber {
+func (t *TravelHistory) getPrev() CityNumber {
 	return t.prev
 }
 func (t *TravelHistory) contains(s CityNumber) bool {
@@ -172,8 +168,7 @@ func (t *TravelHistory) contains(s CityNumber) bool {
 }
 func (t *TravelHistory) push(move CityNumber) *TravelHistory {
 	(*t.prevM)[t.current] = true
-	c := t.current
-	t.prev = &c
+	t.prev = t.current
 	t.current = move
 	return t
 }
@@ -181,11 +176,11 @@ func (t *TravelHistory) copy() *TravelHistory {
 	return &TravelHistory{copyMap(t.prevM), t.prev, t.current}
 }
 func (t *TravelHistory) pop(prev CityNumber) *TravelHistory {
-	if t.prev != nil {
-		delete(*t.prevM, *t.prev)
-		t.current = *t.prev
+	if t.prev != 0 {
+		delete(*t.prevM, t.prev)
+		t.current = t.prev
 	}
-	t.prev = &prev
+	t.prev = prev
 	return t
 }
 
