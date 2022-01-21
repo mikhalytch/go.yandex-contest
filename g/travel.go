@@ -27,12 +27,17 @@ type TravelInput struct {
 }
 
 func (td *TravelInput) Contains(i CityNumber) bool { return i > 0 && int(i) <= len(td.Cities) }
-func (td *TravelInput) ReachableMoves(th *TravelHistory, filter *map[CityNumber]bool) []CityNumber {
+func (td *TravelInput) ReachableMoves(th TravelHistory) []CityNumber {
+	filter := map[CityNumber]bool{
+		td.RouteStart: true,
+		th.current:    true,
+		th.prev:       true,
+	}
 	fromIdx := int(th.current - 1)
 	var res []CityNumber
 	for idx := 0; idx < len(td.Cities); idx++ {
 		num := CityNumber(idx + 1)
-		if (*filter)[num] {
+		if filter[num] {
 			continue
 		}
 		if td.IsCityReachable(td.Cities[fromIdx], td.Cities[idx]) {
@@ -57,7 +62,8 @@ type MinAgg struct {
 	set            bool
 }
 
-func (a *MinAgg) registerCandidate(length Length) {
+func (a *MinAgg) registerCandidate(th *TravelHistory) {
+	length := Length(len(*th.prevM))
 	if length <= a.knownMinLength { // test #7 has length == len(cities)-1
 		a.knownMinLength = length
 		a.set = true
@@ -78,7 +84,9 @@ type VisitLengthRegistrar struct {
 	lengths map[CityNumber]Length
 }
 
-func (vlr *VisitLengthRegistrar) registerForShortness(num CityNumber, reg Length) bool {
+func (vlr *VisitLengthRegistrar) registerForShortness(th TravelHistory) bool {
+	num := th.current
+	reg := Length(len(*th.prevM))
 	if l, ok := vlr.lengths[num]; !ok || reg < l {
 		vlr.lengths[num] = reg
 		return true
@@ -89,49 +97,35 @@ func (vlr *VisitLengthRegistrar) registerForShortness(num CityNumber, reg Length
 
 func (td *TravelInput) CalcTravelLengthDepthFirst(initial *TravelHistory) Length {
 	ma := td.NewMinAgg()
-	td.recTravel(ma, initial, 0, &map[CityNumber]bool{initial.current: true}, NewVisitLengthRegistrar())
+	td.recTravel(ma, initial, NewVisitLengthRegistrar())
 	return ma.getResult()
 }
-func (td *TravelInput) recTravel(
-	ma *MinAgg, th *TravelHistory, curLength Length,
-	filter *map[CityNumber]bool, vlr *VisitLengthRegistrar,
-) {
+func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, vlr *VisitLengthRegistrar) {
 	if th.current == td.RouteFinish {
-		ma.registerCandidate(curLength)
+		ma.registerCandidate(th)
 	}
-	if curLength >= ma.knownMinLength {
+	if Length(len(*th.prevM)) >= ma.knownMinLength {
 		return
 	}
-	if !vlr.registerForShortness(th.current, curLength) {
+	if !vlr.registerForShortness(*th) {
 		return
 	}
-	rFilter := copyMap(filter)
-	(*rFilter)[th.prev] = true
-	(*rFilter)[th.current] = true
-	moves := td.ReachableMoves(th, rFilter)
-	if len(moves) == 0 {
-		(*filter)[th.current] = true
-	}
-	nextLen := curLength + 1
+	moves := td.ReachableMoves(*th)
 	for _, move := range moves {
 		push := th.copy().push(move)
-		td.recTravel(ma, push, nextLen, filter, vlr)
+		td.recTravel(ma, push, vlr)
 	}
 }
 func (td *TravelInput) CalcTravelLengthBreadthFirst(initial *TravelHistory) Length {
-	filter := &map[CityNumber]bool{initial.current: true}
 	vlr := NewVisitLengthRegistrar()
 	curLevelNodes := []TravelHistory{*initial}
 	for level := Length(0); len(curLevelNodes) != 0; level++ {
 		var nodesForNextLevel []TravelHistory // will gather all candidates for next tree level, then loop
 		for _, curLevelNode := range curLevelNodes {
-			if !vlr.registerForShortness(curLevelNode.current, level) {
+			if !vlr.registerForShortness(curLevelNode) {
 				continue
 			}
-			rFilter := copyMap(filter)
-			(*rFilter)[curLevelNode.current] = true
-			(*rFilter)[curLevelNode.prev] = true
-			moves := td.ReachableMoves(&curLevelNode, rFilter)
+			moves := td.ReachableMoves(curLevelNode)
 			for _, move := range moves {
 				if move == td.RouteFinish {
 					return level + 1
@@ -199,12 +193,7 @@ func CalcTravel(in *TravelInput, depthFirst bool) Length {
 
 func Travel(reader io.Reader, writer io.Writer) {
 	input := ReadInput(reader)
-	length1 := CalcTravel(input, depthFirstTravelSearch)
-	length2 := CalcTravel(input, !depthFirstTravelSearch)
-	if length2 < length1 { // I've had panic at test#21 => means depthFirstTravelSearch gives bigger result
-		panic("at the disco")
-	}
-	_, _ = fmt.Fprintf(writer, "%d", length1)
+	_, _ = fmt.Fprintf(writer, "%d", CalcTravel(input, depthFirstTravelSearch))
 }
 func ReadInput(reader io.Reader) *TravelInput {
 	scanner := bufio.NewScanner(reader)
