@@ -193,7 +193,6 @@ func TestReadInput(t *testing.T) {
 }
 
 func TestCalcTravel(t *testing.T) {
-	swapped := []bool{true, false}
 	tests := []struct {
 		in  *TravelInput
 		out Length
@@ -211,11 +210,12 @@ func TestCalcTravel(t *testing.T) {
 		{ReadInput(strings.NewReader(loops)), aLoops},
 		{ReadInput(strings.NewReader(twoWays)), aTwoWays},
 	}
-	recursion := []bool{true, false}
-	for _, r := range recursion {
-		t.Run(fmt.Sprintf("recursive:%v", r), func(t *testing.T) {
-			for idx, test := range tests {
-				t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+	swapped := []bool{true, false}
+	depth1st := []bool{true, false}
+	for idx, test := range tests {
+		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+			for _, r := range depth1st {
+				t.Run(fmt.Sprintf("recursive:%v", r), func(t *testing.T) {
 					for _, s := range swapped {
 						t.Run(fmt.Sprintf("swapped:%v", s), func(t *testing.T) {
 							data := test.in
