@@ -93,7 +93,7 @@ func (vlr *VisitLengthRegistrar) isTooLong(th TravelHistory) bool {
 	return true
 }
 
-func (td *TravelInput) CalcTravelLengthDepthFirst(initial *TravelHistory) Length {
+func (td *TravelInput) CalcTravelLengthDepth1st(initial *TravelHistory) Length {
 	ma := &MinAgg{}
 	td.recTravel(ma, initial, NewVisitLengthRegistrar())
 	return ma.getResult()
@@ -108,17 +108,17 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, vlr *VisitLength
 	moves := td.ReachableCities(*th)
 	prevCarryover := th.getPrev()
 	for _, move := range moves {
-		push := th.push(move)
+		push := th.push(move) // todo make push-prepare once & change current @ loop
 		td.recTravel(ma, push, vlr)
 
-		t, err := push.pop(prevCarryover)
+		t, err := push.pop(prevCarryover) // todo make pop once after loop / @ defer
 		if err != nil {
 			panic(fmt.Errorf("unable to pop at length %v, move %v: %w", th.getLength(), move, err))
 		}
 		th = t
 	}
 }
-func (td *TravelInput) CalcTravelLengthBreadthFirst(initial *TravelHistory) Length {
+func (td *TravelInput) CalcTravelLengthBreadth1st(initial *TravelHistory) Length {
 	vlr := NewVisitLengthRegistrar()
 	curLevelNodes := []TravelHistory{*initial}
 	for level := Length(0); len(curLevelNodes) != 0; level++ {
@@ -196,15 +196,12 @@ func (t *TravelHistory) getPrev() *CityNumber {
 	return &p
 }
 
-func NewCityCoordinates(x, y int) CityCoordinates {
-	return CityCoordinates{X: x, Y: y}
-}
-
 type CityCoordinates struct {
 	X int
 	Y int
 }
 
+func NewCityCoordinates(x, y int) CityCoordinates { return CityCoordinates{X: x, Y: y} }
 func (cc CityCoordinates) distanceTo(a CityCoordinates) Distance {
 	return DistanceBetween(cc, a)
 }
@@ -216,9 +213,9 @@ func CalcTravel(in *TravelInput, depthFirst bool) Length {
 	}
 	initial := NewTravelHistory(in.RouteStart)
 	if depthFirst {
-		return in.CalcTravelLengthDepthFirst(initial)
+		return in.CalcTravelLengthDepth1st(initial)
 	} else {
-		return in.CalcTravelLengthBreadthFirst(initial)
+		return in.CalcTravelLengthBreadth1st(initial)
 	}
 }
 
