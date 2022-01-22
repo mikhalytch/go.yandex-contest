@@ -130,6 +130,12 @@ const (
 1
 1 14`
 	aTwoWays = 4
+	simplest = `2
+0 0
+1 0
+1
+1 2`
+	aSimplest = 1
 )
 
 var (
@@ -209,6 +215,7 @@ func TestCalcTravel(t *testing.T) {
 		{ReadInput(strings.NewReader(fullPath)), aFullPath},
 		{ReadInput(strings.NewReader(loops)), aLoops},
 		{ReadInput(strings.NewReader(twoWays)), aTwoWays},
+		{ReadInput(strings.NewReader(simplest)), aSimplest},
 	}
 	swapped := []bool{true, false}
 	depth1st := []bool{true, false}
@@ -295,6 +302,51 @@ func TestReachableMoves(t *testing.T) {
 				t.Fatalf("Got %v available, want %v", got, want)
 			}
 		})
+	}
+}
+func TestTradeHistory(t *testing.T) {
+	cn1 := CityNumber(1)
+	cn2 := CityNumber(2)
+	cn3 := CityNumber(3)
+	th := NewTravelHistory(cn1)
+	assertBool(t, th.contains(1), true)
+	assertLength(t, th.getLength(), 0)
+	th.push(cn2)
+	assertBool(t, th.contains(2), true)
+	assertLength(t, th.getLength(), 1)
+	th.push(cn3)
+	assertBool(t, th.contains(3), true)
+	assertLength(t, th.getLength(), 2)
+	assertBool(t, th.contains(4), false)
+	assertNoError(t, th.pop(&cn1))
+	assertBool(t, th.contains(1), true)
+	assertBool(t, th.contains(2), true)
+	assertBool(t, th.contains(3), false)
+	assertLength(t, th.getLength(), 1)
+	assertNoError(t, th.pop(nil))
+	assertBool(t, th.contains(1), true)
+	assertBool(t, th.contains(2), false)
+	assertLength(t, th.getLength(), 0)
+}
+
+func assertLength(t *testing.T, got Length, want Length) {
+	t.Helper()
+	if got != want {
+		t.Fatalf("Got %d length, want %d", got, want)
+	}
+}
+
+func assertNoError(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatalf("got error, not expecting one: %s", err)
+	}
+}
+
+func assertBool(t *testing.T, got bool, want bool) {
+	t.Helper()
+	if got != want {
+		t.Fatalf("Got %v, want %v", got, want)
 	}
 }
 
