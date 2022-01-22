@@ -13,7 +13,7 @@ type Distance int
 type CityNumber int
 type Length int
 
-const depthFirstTravelSearch = false
+const depthFirstTravelSearch = true
 
 func main() {
 	Travel(os.Stdin, os.Stdout)
@@ -53,13 +53,13 @@ func (td *TravelInput) IsCityReachable(toCity CityCoordinates, fromCity CityCoor
 func (td *TravelInput) NewMinAgg() *MinAgg { return &MinAgg{Length(len(td.Cities)), false} }
 
 type MinAgg struct {
-	knownMinLength Length
+	knownMinLength Length /* todo use pointer, rm .set */
 	set            bool
 }
 
 func (a *MinAgg) isPossibleCandidate(th *TravelHistory, td *TravelInput) bool {
 	if th.current == td.RouteFinish {
-		length := Length(len(*th.prevM))
+		length := th.getLength()
 		if length < a.knownMinLength { // test #7 has length == len(cities)-1
 			a.knownMinLength = length
 			a.set = true
@@ -69,7 +69,7 @@ func (a *MinAgg) isPossibleCandidate(th *TravelHistory, td *TravelInput) bool {
 	return false
 }
 func (a *MinAgg) isTooLong(th *TravelHistory) bool {
-	return a.set && Length(len(*th.prevM)) >= a.knownMinLength
+	return a.set && th.getLength() >= a.knownMinLength
 }
 func (a *MinAgg) getResult() Length {
 	if !a.set {
@@ -88,7 +88,7 @@ type VisitLengthRegistrar struct {
 
 func (vlr *VisitLengthRegistrar) isTooLong(th TravelHistory) bool {
 	num := th.current
-	candidateLength := Length(len(*th.prevM))
+	candidateLength := th.getLength()
 	if savedLength, ok := vlr.lengths[num]; !ok || candidateLength < savedLength {
 		vlr.lengths[num] = candidateLength
 		return false
@@ -110,12 +110,16 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, vlr *VisitLength
 		return
 	}
 	moves := td.ReachableCities(*th)
-	var prev CityNumber
-	th.getPrev(&prev)
+	prevCarryover := th.getPrev()
 	for _, move := range moves {
 		push := th.push(move)
 		td.recTravel(ma, push, vlr)
-		th = push.pop(prev)
+
+		t, err := push.pop(prevCarryover)
+		if err != nil {
+			panic(fmt.Errorf("unable to pop at length %v, move %v: %w", th.getLength(), move, err))
+		}
+		th = t
 	}
 }
 func (td *TravelInput) CalcTravelLengthBreadthFirst(initial *TravelHistory) Length {
@@ -147,10 +151,11 @@ func NewTravelHistory(cur CityNumber) *TravelHistory {
 
 type TravelHistory struct {
 	prevM   *map[CityNumber]bool
-	prev    *CityNumber
+	prev    *CityNumber // use the pointer type, so we could store initial nil
 	current CityNumber
 }
 
+func (t *TravelHistory) getLength() Length            { return Length(len(*t.prevM)) }
 func (t *TravelHistory) isCurrent(cn CityNumber) bool { return cn == t.current }
 func (t *TravelHistory) isPrev(cn CityNumber) bool    { return t.prev != nil && *t.prev == cn }
 func (t *TravelHistory) contains(s CityNumber) bool {
@@ -161,35 +166,38 @@ func (t *TravelHistory) contains(s CityNumber) bool {
 }
 func (t *TravelHistory) push(move CityNumber) *TravelHistory {
 	(*t.prevM)[t.current] = true
-	cur := t.current /* todo copyCurTo(*) */
-	t.prev = &cur
+	if t.prev == nil {
+		t.prev = new(CityNumber)
+	}
+	*t.prev = t.current
 	t.current = move
 	return t
 }
 func (t *TravelHistory) copy() *TravelHistory {
-	var prev CityNumber
-	t.getPrev(&prev)
-	return &TravelHistory{copyMap(t.prevM), &prev, t.current}
+	return &TravelHistory{copyMap(t.prevM), t.getPrev(), t.current}
 }
-func (t *TravelHistory) pop(prev CityNumber) *TravelHistory {
+func (t *TravelHistory) pop(prev *CityNumber) (*TravelHistory, error) {
 	delete(*t.prevM, t.current)
-	t.current = *t.prev
-	t.prev = &prev
-	return t
-}
-func (t *TravelHistory) setPrev(n *CityNumber) { /* todo rm */
-	if n == nil {
-		t.prev = nil
-	} else {
-		*t.prev = *n
-	}
-}
-func (t *TravelHistory) getPrev(n *CityNumber) { /* todo copyPrevTo(*) */
 	if t.prev == nil {
-		n = nil
-	} else {
-		*n = *t.prev
+		return nil, fmt.Errorf("cannot pop: nil prev")
 	}
+	t.current = *t.prev
+	if prev == nil {
+		t.prev = prev
+	} else {
+		*t.prev = *prev
+	}
+	if t.prev == nil {
+		t.prev = new(CityNumber)
+	}
+	return t, nil
+}
+func (t *TravelHistory) getPrev() *CityNumber {
+	if t.prev == nil {
+		return nil
+	}
+	p := *t.prev // allocate memory, so that internal pointers doesn't escape
+	return &p
 }
 
 func NewCityCoordinates(x, y int) CityCoordinates {
