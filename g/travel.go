@@ -50,32 +50,28 @@ func (td *TravelInput) IsCityReachable(toCity CityCoordinates, fromCity CityCoor
 	return fromCity.distanceTo(toCity) <= td.MaxUnRefuelled
 }
 
-func (td *TravelInput) NewMinAgg() *MinAgg { return &MinAgg{Length(len(td.Cities)), false} }
-
-type MinAgg struct {
-	knownMinLength Length /* todo use pointer, rm .set */
-	set            bool
-}
+type MinAgg struct{ knownMin *Length }
 
 func (a *MinAgg) isPossibleCandidate(th *TravelHistory, td *TravelInput) bool {
-	if th.current == td.RouteFinish {
-		length := th.getLength()
-		if length < a.knownMinLength { // test #7 has length == len(cities)-1
-			a.knownMinLength = length
-			a.set = true
-		}
-		return true
+	if th.current != td.RouteFinish {
+		return false
 	}
-	return false
+	length := th.getLength()
+	if a.knownMin == nil {
+		a.knownMin = &length
+	} else if length < *a.knownMin {
+		*a.knownMin = length
+	}
+	return true
 }
 func (a *MinAgg) isTooLong(th *TravelHistory) bool {
-	return a.set && th.getLength() >= a.knownMinLength
+	return a.knownMin != nil && th.getLength() >= *a.knownMin
 }
 func (a *MinAgg) getResult() Length {
-	if !a.set {
+	if a.knownMin == nil {
 		return -1
 	}
-	return a.knownMinLength
+	return *a.knownMin
 }
 
 func NewVisitLengthRegistrar() *VisitLengthRegistrar {
@@ -98,7 +94,7 @@ func (vlr *VisitLengthRegistrar) isTooLong(th TravelHistory) bool {
 }
 
 func (td *TravelInput) CalcTravelLengthDepthFirst(initial *TravelHistory) Length {
-	ma := td.NewMinAgg()
+	ma := &MinAgg{}
 	td.recTravel(ma, initial, NewVisitLengthRegistrar())
 	return ma.getResult()
 }
