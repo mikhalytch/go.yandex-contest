@@ -12,17 +12,17 @@ import (
 // depth1stTravelSearch allows selecting 1 of 2 available algorithms: depth-1 or breadth-1:
 // - depth-1 passes ya.contest tests with ~470ms / 5.2Mb;
 // - breadth-1 - with ~150ms / 10.5Mb.
-const depth1stTravelSearch = false
+const depth1stTravelSearch = true
 
 func main() {
 	Travel(os.Stdin, os.Stdout)
 }
 
 type (
-	Distance int
+	Distance   int
+	CityNumber int
+	Length     int
 )
-type CityNumber int
-type Length int
 
 type TravelInput struct {
 	Cities         []CityCoordinates
@@ -90,12 +90,11 @@ type VisitLengthRegistrar struct {
 func (vlr *VisitLengthRegistrar) isTooLong(th TravelHistory) bool {
 	num := th.current
 	candidateLength := th.getLength()
-	if savedLength, ok := vlr.lengths[num]; !ok || candidateLength < savedLength {
-		vlr.lengths[num] = candidateLength
-		return false
+	if storedLength, ok := vlr.lengths[num]; ok && candidateLength >= storedLength {
+		return true
 	}
-	// else if ok && savedLength <= candidateLength
-	return true
+	vlr.lengths[num] = candidateLength
+	return false
 }
 
 func (td *TravelInput) CalcTravelLengthDepth1st(initial *TravelHistory) Length {
@@ -104,10 +103,7 @@ func (td *TravelInput) CalcTravelLengthDepth1st(initial *TravelHistory) Length {
 	return ma.getResult()
 }
 func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, vlr *VisitLengthRegistrar) {
-	if ma.isTooLong(th) || ma.isPossibleCandidate(th, td) {
-		return
-	}
-	if vlr.isTooLong(*th) {
+	if ma.isTooLong(th) || ma.isPossibleCandidate(th, td) || vlr.isTooLong(*th) {
 		return
 	}
 	moves := td.ReachableCities(*th)
