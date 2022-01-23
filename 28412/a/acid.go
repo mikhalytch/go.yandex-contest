@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -13,10 +14,16 @@ func main() {
 }
 
 func Calc(reader io.Reader, writer io.Writer) {
-
+	input := ReadInput(reader)
+	steps := CalcSteps(input)
+	_, _ = fmt.Fprintf(writer, "%d", steps)
 }
 
-type Volume int
+type (
+	Volume int
+	Steps  int
+)
+
 type Laboratory struct {
 	volumes []Volume
 }
@@ -34,6 +41,23 @@ func (l *Laboratory) AreVolumesEqual() bool {
 		}
 	}
 	return true
+}
+
+func CalcSteps(in Laboratory) Steps {
+	steps := Steps(0)
+	lastVol := Volume(0)
+	for idx, volume := range in.volumes {
+		if idx == 0 {
+			lastVol = volume
+		} else if volume > lastVol {
+			steps += Steps(volume - lastVol)
+			lastVol = volume
+		} else if volume < lastVol {
+			steps = -1
+			break
+		}
+	}
+	return steps
 }
 
 func ReadInput(r io.Reader) Laboratory {
