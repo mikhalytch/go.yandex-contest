@@ -26,6 +26,19 @@ const (
 	inIncorrect1 = `2
 1 10000000000`
 	outIncorrect1 = `-1`
+
+	inExtra1 = `3
+1 2 3`
+	outExtra1 = `2`
+	inExtra2  = `3
+1 2 4`
+	outExtra2 = `3`
+	inExtra3  = `3
+1 1 1`
+	outExtra3 = `0`
+	inExtra4  = `1
+1`
+	outExtra4 = `0`
 )
 
 func TestCalc(t *testing.T) {
@@ -42,6 +55,10 @@ func TestCalc(t *testing.T) {
 		{inNeg, outNeg},
 		{inIncorrect1, outIncorrect1},
 		{inIncorrect2, outIncorrect2},
+		{inExtra1, outExtra1},
+		{inExtra2, outExtra2},
+		{inExtra3, outExtra3},
+		{inExtra4, outExtra4},
 	}
 	for idx, test := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
