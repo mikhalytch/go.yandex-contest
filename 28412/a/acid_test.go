@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"reflect"
 	"strings"
 	"testing"
 )
@@ -73,55 +72,5 @@ func assertCalc(t *testing.T, got string, want string) {
 	t.Helper()
 	if got != want {
 		t.Fatalf("Got %q calc, want %q", got, want)
-	}
-}
-
-func TestReadInput(t *testing.T) {
-	tests := []struct {
-		in   string
-		want Laboratory
-	}{
-		{in1, Laboratory{volumes: []Volume{1, 2}}},
-		{in2, Laboratory{volumes: []Volume{1, 1, 5, 5, 5}}},
-		{in3, Laboratory{volumes: []Volume{3, 2, 1}}},
-	}
-	for idx, test := range tests {
-		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			got := ReadInput(strings.NewReader(test.in))
-			want := test.want
-			assertInput(t, got, want)
-		})
-	}
-}
-
-func TestCalcSteps(t *testing.T) {
-	tests := []struct {
-		in   Laboratory
-		want Steps
-	}{
-		{Laboratory{[]Volume{1, 2, 3}}, 2},
-		{Laboratory{[]Volume{1, 2, 4}}, 3},
-		{Laboratory{[]Volume{3, 2, 1}}, -1},
-		{Laboratory{[]Volume{1, 1, 1}}, 0},
-		{Laboratory{[]Volume{1}}, 0},
-	}
-	for idx, test := range tests {
-		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			assertSteps(t, test.in.CalcSteps(), test.want)
-		})
-	}
-}
-
-func assertSteps(t *testing.T, got Steps, want Steps) {
-	t.Helper()
-	if got != want {
-		t.Fatalf("Got %v steps, want %v", got, want)
-	}
-}
-
-func assertInput(t *testing.T, got Laboratory, want Laboratory) {
-	t.Helper()
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("Got %#v input, want %#v", got, want)
 	}
 }

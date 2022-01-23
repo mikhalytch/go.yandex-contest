@@ -12,55 +12,44 @@ func main() {
 	Calc(os.Stdin, os.Stdout)
 }
 
-func Calc(reader io.Reader, writer io.Writer) {
-	_, _ = fmt.Fprintf(writer, "%d", ReadInput(reader).CalcSteps())
-}
-
 type (
 	Volume int
 	Steps  int
 )
 
-type Laboratory struct {
-	volumes []Volume
-}
-
-func (l Laboratory) CalcSteps() Steps {
-	steps := Steps(-1)
-	lastVol := Volume(0)
-	for idx, volume := range l.volumes {
-		if idx == 0 {
-			lastVol = volume
-			steps = 0
-		} else if volume > lastVol {
-			steps += Steps(volume - lastVol)
-			lastVol = volume
-		} else if volume < lastVol {
-			steps = -1
-			break
-		}
-	}
-	return steps
-}
-
-func ReadInput(r io.Reader) Laboratory {
-	scanner := bufio.NewScanner(r)
-	scanner.Split(bufio.ScanWords)
-	scanner.Scan()
-	line1 := scanner.Text()
-	num, _ := strconv.Atoi(line1)
-	if num > 1e5 {
-		return Laboratory{}
-	}
-	result := Laboratory{make([]Volume, 0, num)}
-	for vIdx := 0; vIdx < num; vIdx++ {
+func Calc(r io.Reader, writer io.Writer) {
+	calcSteps := func(r io.Reader) Steps {
+		scanner := bufio.NewScanner(r)
+		scanner.Split(bufio.ScanWords)
 		scanner.Scan()
-		vText := scanner.Text()
-		v, _ := strconv.Atoi(vText)
-		if v < 1 || v > 1e9 {
-			return Laboratory{}
+		line1 := scanner.Text()
+		barrelsAmt, _ := strconv.Atoi(line1)
+		if barrelsAmt > 1e5 {
+			return -1
 		}
-		result.volumes = append(result.volumes, Volume(v))
+		result := Steps(-1)
+		lastVol := Volume(0)
+		for vIdx := 0; vIdx < barrelsAmt; vIdx++ {
+			scanner.Scan()
+			vText := scanner.Text()
+			v, _ := strconv.Atoi(vText)
+			vol := Volume(v)
+			if vol < 1 || vol > 1e9 {
+				return -1
+			}
+
+			if vIdx == 0 {
+				lastVol = vol
+				result = 0
+			} else if vol > lastVol {
+				result += Steps(vol - lastVol)
+				lastVol = vol
+			} else if vol < lastVol {
+				return -1
+			}
+		}
+		return result
 	}
-	return result
+
+	_, _ = fmt.Fprintf(writer, "%d", calcSteps(r))
 }
