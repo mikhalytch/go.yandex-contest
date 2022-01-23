@@ -9,15 +9,20 @@ import (
 	"strings"
 )
 
-type Distance int
-type CityNumber int
-type Length int
-
-const depthFirstTravelSearch = true
+// depth1stTravelSearch allows selecting 1 of 2 available algorithms: depth-1 or breadth-1:
+// - depth-1 passes ya.contest tests with ~470ms / 5.2Mb;
+// - breadth-1 - with ~150ms / 10.5Mb.
+const depth1stTravelSearch = false
 
 func main() {
 	Travel(os.Stdin, os.Stdout)
 }
+
+type (
+	Distance int
+)
+type CityNumber int
+type Length int
 
 type TravelInput struct {
 	Cities         []CityCoordinates
@@ -109,12 +114,11 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, vlr *VisitLength
 	if len(moves) == 0 {
 		return
 	}
-	carryover := th.getPrev()
 	defer func(carryover *CityNumber) {
 		if err := th.pop(carryover); err != nil {
 			panic(fmt.Errorf("unable to pop at length %v: %w", th.getLength(), err))
 		}
-	}(carryover)
+	}(th.getPrev())
 	th.preparePush()
 	for _, move := range moves {
 		td.recTravel(ma, th.performPush(move), vlr)
@@ -180,7 +184,6 @@ func (t *TravelHistory) copy() *TravelHistory {
 	return &TravelHistory{copyMap(t.prevM), t.getPrev(), t.current}
 }
 func (t *TravelHistory) pop(prev *CityNumber) error {
-	//delete(*t.prevM, t.current)// todo this is wrong
 	if t.prev == nil {
 		return fmt.Errorf("cannot pop: nil prev")
 	}
@@ -190,10 +193,7 @@ func (t *TravelHistory) pop(prev *CityNumber) error {
 		t.prev = prev
 	} else {
 		*t.prev = *prev
-	} /*// todo this is wrong
-	if t.prev == nil {
-		t.prev = new(CityNumber)
-	}*/
+	}
 	return nil
 }
 func (t *TravelHistory) getPrev() *CityNumber {
@@ -229,7 +229,7 @@ func CalcTravel(in *TravelInput, depthFirst bool) Length {
 
 func Travel(reader io.Reader, writer io.Writer) {
 	input := ReadInput(reader)
-	_, _ = fmt.Fprintf(writer, "%d", CalcTravel(input, depthFirstTravelSearch))
+	_, _ = fmt.Fprintf(writer, "%d", CalcTravel(input, depth1stTravelSearch))
 }
 func ReadInput(reader io.Reader) *TravelInput {
 	scanner := bufio.NewScanner(reader)
