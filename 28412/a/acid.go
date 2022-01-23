@@ -14,9 +14,7 @@ func main() {
 }
 
 func Calc(reader io.Reader, writer io.Writer) {
-	input := ReadInput(reader)
-	steps := CalcSteps(input)
-	_, _ = fmt.Fprintf(writer, "%d", steps)
+	_, _ = fmt.Fprintf(writer, "%d", ReadInput(reader).CalcSteps())
 }
 
 type (
@@ -28,25 +26,10 @@ type Laboratory struct {
 	volumes []Volume
 }
 
-// todo rm
-func (l *Laboratory) AreVolumesEqual() bool {
-	var v *Volume
-	for _, volume := range l.volumes {
-		if v == nil {
-			v = new(Volume)
-			*v = volume
-		}
-		if *v != volume {
-			return false
-		}
-	}
-	return true
-}
-
-func CalcSteps(in Laboratory) Steps {
+func (l Laboratory) CalcSteps() Steps {
 	steps := Steps(0)
 	lastVol := Volume(0)
-	for idx, volume := range in.volumes {
+	for idx, volume := range l.volumes {
 		if idx == 0 {
 			lastVol = volume
 		} else if volume > lastVol {
