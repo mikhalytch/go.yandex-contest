@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"strconv"
-	"strings"
 )
 
 func main() {
@@ -27,11 +26,12 @@ type Laboratory struct {
 }
 
 func (l Laboratory) CalcSteps() Steps {
-	steps := Steps(0)
+	steps := Steps(-1)
 	lastVol := Volume(0)
 	for idx, volume := range l.volumes {
 		if idx == 0 {
 			lastVol = volume
+			steps = 0
 		} else if volume > lastVol {
 			steps += Steps(volume - lastVol)
 			lastVol = volume
@@ -45,18 +45,21 @@ func (l Laboratory) CalcSteps() Steps {
 
 func ReadInput(r io.Reader) Laboratory {
 	scanner := bufio.NewScanner(r)
+	scanner.Split(bufio.ScanWords)
 	scanner.Scan()
 	line1 := scanner.Text()
 	num, _ := strconv.Atoi(line1)
-	scanner.Scan()
-	line2 := scanner.Text()
-	volumesScanner := bufio.NewScanner(strings.NewReader(line2))
-	volumesScanner.Split(bufio.ScanWords)
+	if num > 1e5 {
+		return Laboratory{}
+	}
 	result := Laboratory{make([]Volume, 0, num)}
 	for vIdx := 0; vIdx < num; vIdx++ {
-		volumesScanner.Scan()
-		vText := volumesScanner.Text()
+		scanner.Scan()
+		vText := scanner.Text()
 		v, _ := strconv.Atoi(vText)
+		if v < 1 || v > 1e9 {
+			return Laboratory{}
+		}
 		result.volumes = append(result.volumes, Volume(v))
 	}
 	return result
