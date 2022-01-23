@@ -1,3 +1,3 @@
-module yandex-contest-8458.20220116
+module yandex-contest
 
 go 1.17
