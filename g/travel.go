@@ -106,16 +106,18 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, vlr *VisitLength
 		return
 	}
 	moves := td.ReachableCities(*th)
-	prevCarryover := th.getPrev()
-	for _, move := range moves {
-		push := th.push(move) // todo make push-prepare once & change current @ loop
-		td.recTravel(ma, push, vlr)
-
-		t, err := push.pop(prevCarryover) // todo make pop once after loop / @ defer
-		if err != nil {
-			panic(fmt.Errorf("unable to pop at length %v, move %v: %w", th.getLength(), move, err))
+	if len(moves) == 0 {
+		return
+	}
+	carryover := th.getPrev()
+	defer func(carryover *CityNumber) {
+		if err := th.pop(carryover); err != nil {
+			panic(fmt.Errorf("unable to pop at length %v: %w", th.getLength(), err))
 		}
-		th = t
+	}(carryover)
+	th.preparePush()
+	for _, move := range moves {
+		td.recTravel(ma, th.performPush(move), vlr)
 	}
 }
 func (td *TravelInput) CalcTravelLengthBreadth1st(initial *TravelHistory) Length {
@@ -132,8 +134,7 @@ func (td *TravelInput) CalcTravelLengthBreadth1st(initial *TravelHistory) Length
 				if move == td.RouteFinish {
 					return level + 1
 				}
-				push := *curLevelNode.copy().push(move)
-				nodesForNextLevel = append(nodesForNextLevel, push)
+				nodesForNextLevel = append(nodesForNextLevel, *curLevelNode.copy().push(move))
 			}
 		}
 		curLevelNodes = nodesForNextLevel
@@ -160,33 +161,40 @@ func (t *TravelHistory) contains(s CityNumber) bool {
 	}
 	return (*t.prevM)[s]
 }
-func (t *TravelHistory) push(move CityNumber) *TravelHistory {
+func (t *TravelHistory) preparePush() {
 	(*t.prevM)[t.current] = true
 	if t.prev == nil {
 		t.prev = new(CityNumber)
 	}
 	*t.prev = t.current
+}
+func (t *TravelHistory) performPush(move CityNumber) *TravelHistory {
 	t.current = move
 	return t
+}
+func (t *TravelHistory) push(move CityNumber) *TravelHistory {
+	t.preparePush()
+	return t.performPush(move)
 }
 func (t *TravelHistory) copy() *TravelHistory {
 	return &TravelHistory{copyMap(t.prevM), t.getPrev(), t.current}
 }
-func (t *TravelHistory) pop(prev *CityNumber) (*TravelHistory, error) {
-	delete(*t.prevM, t.current)
+func (t *TravelHistory) pop(prev *CityNumber) error {
+	//delete(*t.prevM, t.current)// todo this is wrong
 	if t.prev == nil {
-		return nil, fmt.Errorf("cannot pop: nil prev")
+		return fmt.Errorf("cannot pop: nil prev")
 	}
+	delete(*t.prevM, *t.prev)
 	t.current = *t.prev
 	if prev == nil {
 		t.prev = prev
 	} else {
 		*t.prev = *prev
-	}
+	} /*// todo this is wrong
 	if t.prev == nil {
 		t.prev = new(CityNumber)
-	}
-	return t, nil
+	}*/
+	return nil
 }
 func (t *TravelHistory) getPrev() *CityNumber {
 	if t.prev == nil {
