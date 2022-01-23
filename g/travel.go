@@ -11,7 +11,7 @@ import (
 
 // depth1stTravelSearch allows selecting 1 of 2 available algorithms: depth-1 or breadth-1:
 // - depth-1 passes ya.contest tests with ~470ms / 5.2Mb;
-// - breadth-1 - with ~150ms / 10.5Mb.
+// - breadth-1 - with ~150ms / 9.1Mb.
 const depth1stTravelSearch = true
 
 func main() {
@@ -123,7 +123,7 @@ func (td *TravelInput) recTravel(ma *MinAgg, th *TravelHistory, vlr *VisitLength
 func (td *TravelInput) CalcTravelLengthBreadth1st(initial *TravelHistory) Length {
 	vlr := NewVisitLengthRegistrar()
 	curLevelNodes := []TravelHistory{*initial}
-	for level := Length(0); len(curLevelNodes) != 0; level++ {
+	for len(curLevelNodes) != 0 {
 		var nodesForNextLevel []TravelHistory // will gather all candidates for next tree level, then loop
 		for _, curLevelNode := range curLevelNodes {
 			if vlr.isTooLong(curLevelNode) {
@@ -131,10 +131,11 @@ func (td *TravelInput) CalcTravelLengthBreadth1st(initial *TravelHistory) Length
 			}
 			moves := td.ReachableCities(curLevelNode)
 			for _, move := range moves {
+				nextLevelNode := *curLevelNode.copy().push(move)
 				if move == td.RouteFinish {
-					return level + 1
+					return nextLevelNode.getLength()
 				}
-				nodesForNextLevel = append(nodesForNextLevel, *curLevelNode.copy().push(move))
+				nodesForNextLevel = append(nodesForNextLevel, nextLevelNode)
 			}
 		}
 		curLevelNodes = nodesForNextLevel
