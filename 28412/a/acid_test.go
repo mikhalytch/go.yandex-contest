@@ -63,6 +63,32 @@ func TestReadInput(t *testing.T) {
 	}
 }
 
+func TestAreVolumesEqual(t *testing.T) {
+	tests := []struct {
+		in   Laboratory
+		want bool
+	}{
+		{Laboratory{[]Volume{}}, true},
+		{Laboratory{nil}, true},
+		{Laboratory{[]Volume{0, 1}}, false},
+		{Laboratory{[]Volume{2, 1, 5}}, false},
+		{Laboratory{[]Volume{2, 2, 2, 2}}, true},
+	}
+	for idx, test := range tests {
+		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+			got := test.in.AreVolumesEqual()
+			assertVolumesEquality(t, got, test.want)
+		})
+	}
+}
+
+func assertVolumesEquality(t *testing.T, got interface{}, want bool) {
+	t.Helper()
+	if got != want {
+		t.Fatalf("Got %v volumes equality, want %v", got, want)
+	}
+}
+
 func assertInput(t *testing.T, got Laboratory, want Laboratory) {
 	t.Helper()
 	if !reflect.DeepEqual(got, want) {

@@ -21,6 +21,21 @@ type Laboratory struct {
 	volumes []Volume
 }
 
+// todo rm
+func (l *Laboratory) AreVolumesEqual() bool {
+	var v *Volume
+	for _, volume := range l.volumes {
+		if v == nil {
+			v = new(Volume)
+			*v = volume
+		}
+		if *v != volume {
+			return false
+		}
+	}
+	return true
+}
+
 func ReadInput(r io.Reader) Laboratory {
 	scanner := bufio.NewScanner(r)
 	scanner.Scan()
