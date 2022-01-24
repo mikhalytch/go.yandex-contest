@@ -18,7 +18,12 @@ func PlanSeating(reader io.Reader, writer io.Writer) {
 	if err != nil {
 		log.Fatalf("error reading input: %s", err)
 	}
-	input = input //todo finish
+	for idx, request := range input.requests {
+		err := input.state.fulfillRequest(request, writer)
+		if err != nil {
+			log.Fatalf("error fulfilling request %d: %v", idx, request)
+		}
+	}
 }
 
 type RequestedSide int
@@ -138,7 +143,11 @@ func (s SeatingLine) String() string {
 
 type FulfilledPosition int
 
-func (s SeatingLine) fulfillRequest(request GroupRequest) []FulfilledPosition {
+func (f FulfilledPosition) String() string {
+	return string(byte('A') + byte(f))
+}
+
+func (s SeatingLine) positionsForRequest(request GroupRequest) []FulfilledPosition {
 	result := make([]FulfilledPosition, 0)
 	var offset int
 	for idx, amt := 0, request.groupSize; amt > 0; amt-- {
@@ -209,12 +218,30 @@ func (s SeatingState) String() string {
 	}
 	return builder.String()
 }
-
-//func (s *SeatingState) fulfillRequest(req GroupRequest) (bool, string) {		// todo finish
-//	for lineIdx, line := range s.lines {
-//
-//	}
-//}
+func (s *SeatingState) fulfillRequest(req GroupRequest, writer io.Writer) error {
+	for lineIdx, line := range s.lines {
+		pos := line.positionsForRequest(req)
+		if len(pos) == 0 {
+			continue
+		}
+		builder := &strings.Builder{}
+		builder.WriteString("Passengers can take seats: ")
+		ppos := make([]string, 0, len(pos))
+		for _, p := range pos {
+			ppos = append(ppos, fmt.Sprintf("%d%s", lineIdx+1, p))
+		}
+		_, _ = fmt.Fprintf(writer, "Passengers can take seats: %s\n", strings.Join(ppos, " "))
+		err := line.prePopulate(pos)
+		if err != nil {
+			return err
+		}
+		_, _ = fmt.Fprintf(writer, "%s", s)
+		line.populate()
+		return nil
+	}
+	_, _ = fmt.Fprintln(writer, "Cannot fulfill passengers requirements")
+	return nil
+}
 
 type Input struct {
 	state    SeatingState

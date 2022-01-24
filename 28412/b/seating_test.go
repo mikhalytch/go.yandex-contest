@@ -111,13 +111,16 @@ func assertNoError(t *testing.T, err error) {
 }
 
 func TestSeatingState(t *testing.T) {
+	inState := func(s string) SeatingState {
+		st, _ := ReadInput(strings.NewReader(s))
+		return st.state
+	}
 	t.Run("printing", func(t *testing.T) {
-		input1, _ := ReadInput(strings.NewReader(in1))
 		tests := []struct {
 			in   SeatingState
 			want string
 		}{
-			{input1.state, `..._.#.
+			{inState(in1), `..._.#.
 .##_...
 .#._.##
 ..._...
@@ -133,6 +136,63 @@ func TestSeatingState(t *testing.T) {
 			})
 		}
 	})
+	t.Run("fulfill request", func(t *testing.T) {
+		tests := []struct {
+			inState   SeatingState
+			req       string
+			wantOut   string
+			wantState string
+		}{
+			{inState(in1), `2 left aisle`, `Passengers can take seats: 1B 1C
+.XX_.#.
+.##_...
+.#._.##
+..._...
+`, `.##_.#.
+.##_...
+.#._.##
+..._...
+`},
+		}
+		for idx, test := range tests {
+			t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+				request, err := readGroupRequest(test.req)
+				assertNoError(t, err)
+				state := test.inState
+				buffer := &bytes.Buffer{}
+				err = state.fulfillRequest(request, buffer)
+				assertNoError(t, err)
+				assertOutput(t, buffer.String(), test.wantOut)
+				assertSeatingArrangement(t, state.String(), test.wantState)
+			})
+		}
+	})
+}
+
+func TestFulfilledPosition(t *testing.T) {
+	t.Run("string", func(t *testing.T) {
+		tests := []struct {
+			in   FulfilledPosition
+			want string
+		}{
+			{0, "A"},
+			{1, "B"},
+			{5, "F"},
+		}
+		for _, test := range tests {
+			t.Run(test.want, func(t *testing.T) {
+				got := test.in.String()
+				assertOutput(t, got, test.want)
+			})
+		}
+	})
+}
+
+func assertOutput(t *testing.T, got string, want string) {
+	t.Helper()
+	if got != want {
+		t.Fatalf("Got %s output, want %s", got, want)
+	}
 }
 
 func TestSeatingLine(t *testing.T) {
@@ -161,7 +221,7 @@ func TestSeatingLine(t *testing.T) {
 				assertNoError(t, err)
 				request, err := readGroupRequest(test.inReq)
 				assertNoError(t, err)
-				got := line.fulfillRequest(request)
+				got := line.positionsForRequest(request)
 				want := test.want
 				assertCanFulfillRequest(t, got, want)
 			})
@@ -208,7 +268,7 @@ func TestSeatingLine(t *testing.T) {
 	})
 }
 
-func assertLineString(t *testing.T, got interface{}, want string) {
+func assertLineString(t *testing.T, got string, want string) {
 	t.Helper()
 	if got != want {
 		t.Fatalf("Got %s line, want %s", got, want)
