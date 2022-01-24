@@ -130,6 +130,41 @@ func (s SeatingLine) String() string {
 	return builder.String()
 }
 
+type FulfilledPosition int
+
+func (s SeatingLine) fulfillRequest(request GroupRequest) []FulfilledPosition {
+	result := make([]FulfilledPosition, 0)
+	var offset int
+	for idx, amt := 0, request.groupSize; amt > 0; amt-- {
+		var side []LinePosition
+		switch request.side {
+		case left:
+			side = s.left
+			offset = 0
+			switch request.position {
+			case aisle:
+				idx = len(side) - amt
+			case window:
+				idx = request.groupSize - amt
+			}
+		case right:
+			side = s.right
+			offset = len(s.left)
+			switch request.position {
+			case aisle:
+				idx = request.groupSize - amt
+			case window:
+				idx = len(side) - amt
+			}
+		}
+		if idx < 0 || idx >= len(side) || side[idx] != freeSeat {
+			return nil
+		}
+		result = append(result, FulfilledPosition(offset+idx))
+	}
+	return result
+}
+
 type SeatingState struct {
 	lines []SeatingLine
 }

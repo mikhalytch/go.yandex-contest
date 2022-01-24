@@ -135,6 +135,47 @@ func TestSeatingState(t *testing.T) {
 	})
 }
 
+func TestSeatingLine(t *testing.T) {
+	t.Run("can fulfill", func(t *testing.T) {
+		tests := []struct {
+			inLine string
+			inReq  string
+			want   []FulfilledPosition
+		}{
+			{`..._.#.`, `2 left aisle`, []FulfilledPosition{1, 2}},
+			{`.##_...`, `2 left aisle`, nil},
+			{`.#._.##`, `2 left aisle`, nil},
+			{`..._...`, `2 left aisle`, []FulfilledPosition{1, 2}},
+			{`..._.#.`, `3 right window`, nil},
+			{`.##_...`, `3 right window`, []FulfilledPosition{3, 4, 5}},
+			{`.#._.##`, `3 right window`, nil},
+			{`..._...`, `3 right window`, []FulfilledPosition{3, 4, 5}},
+			{`.#._.##`, `3 right aisle`, nil},
+			{`..._...`, `3 right aisle`, []FulfilledPosition{3, 4, 5}},
+			{`.#._.##`, `3 left aisle`, nil},
+			{`..._...`, `3 left aisle`, []FulfilledPosition{0, 1, 2}},
+		}
+		for idx, test := range tests {
+			t.Run(fmt.Sprintf("%d (%s)", idx, test.inReq), func(t *testing.T) {
+				line, err := readSeatingLine(test.inLine)
+				assertNoError(t, err)
+				request, err := readGroupRequest(test.inReq)
+				assertNoError(t, err)
+				got := line.fulfillRequest(request)
+				want := test.want
+				assertCanFulfillRequest(t, got, want)
+			})
+		}
+	})
+}
+
+func assertCanFulfillRequest(t *testing.T, got []FulfilledPosition, want []FulfilledPosition) {
+	t.Helper()
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Got %v fulfillment, want %v", got, want)
+	}
+}
+
 func assertInput(t *testing.T, got Input, want Input) {
 	t.Helper()
 	if !reflect.DeepEqual(got, want) {
