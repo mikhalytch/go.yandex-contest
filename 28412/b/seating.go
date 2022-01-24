@@ -84,10 +84,12 @@ type LinePosition int
 const (
 	freeSeatName     rune         = '.'
 	occupiedSeatName rune         = '#'
+	prePopulatedName rune         = 'X'
 	passageName      rune         = '_'
 	unknownName      rune         = '?'
 	freeSeat         LinePosition = iota
 	occupiedSeat
+	prePopulated
 )
 
 func NewLinePosition(r rune) (LinePosition, error) {
@@ -101,11 +103,13 @@ func NewLinePosition(r rune) (LinePosition, error) {
 	}
 }
 func (l LinePosition) String() string {
-	switch {
-	case l == freeSeat:
+	switch l {
+	case freeSeat:
 		return string(freeSeatName)
-	case l == occupiedSeat:
+	case occupiedSeat:
 		return string(occupiedSeatName)
+	case prePopulated:
+		return string(prePopulatedName)
 	default:
 		return string(unknownName)
 	}
@@ -163,6 +167,24 @@ func (s SeatingLine) fulfillRequest(request GroupRequest) []FulfilledPosition {
 		result = append(result, FulfilledPosition(offset+idx))
 	}
 	return result
+}
+
+func (s *SeatingLine) prePopulate(prep []FulfilledPosition) error {
+	leftOffset := len(s.left)
+	side := s.left
+	offset := 0
+	for _, position := range prep {
+		if int(position) >= leftOffset {
+			side = s.right
+			offset = leftOffset
+		}
+		idx := int(position) - offset
+		if side[idx] != freeSeat {
+			return fmt.Errorf("unable to fulfill prep %v on line %s", prep, s)
+		}
+		side[idx] = prePopulated
+	}
+	return nil
 }
 
 type SeatingState struct {

@@ -167,6 +167,33 @@ func TestSeatingLine(t *testing.T) {
 			})
 		}
 	})
+	t.Run("prePopulate", func(t *testing.T) {
+		tests := []struct {
+			inLine    string
+			inFulfill []FulfilledPosition
+			wantLine  string
+		}{
+			{`..._...`, []FulfilledPosition{0, 1, 2}, "XXX_...\n"},
+		}
+		for idx, test := range tests {
+			t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+				line, err := readSeatingLine(test.inLine)
+				assertNoError(t, err)
+				err = line.prePopulate(test.inFulfill)
+				assertNoError(t, err)
+				got := line.String()
+				want := test.wantLine
+				assertLineString(t, got, want)
+			})
+		}
+	})
+}
+
+func assertLineString(t *testing.T, got interface{}, want string) {
+	t.Helper()
+	if got != want {
+		t.Fatalf("Got %s line, want %s", got, want)
+	}
 }
 
 func assertCanFulfillRequest(t *testing.T, got []FulfilledPosition, want []FulfilledPosition) {
