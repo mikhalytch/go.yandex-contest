@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -13,7 +14,11 @@ func main() {
 	PlanSeating(os.Stdin, os.Stdout)
 }
 func PlanSeating(reader io.Reader, writer io.Writer) {
-
+	input, err := ReadInput(reader)
+	if err != nil {
+		log.Fatalf("error reading input: %s", err)
+	}
+	input = input //todo finish
 }
 
 type RequestedSide int
@@ -21,7 +26,7 @@ type RequestedSide int
 const (
 	leftName  string        = "left"
 	rightName string        = "right"
-	left      RequestedSide = iota // okay to start from non-zero value
+	left      RequestedSide = iota
 	right
 )
 
@@ -41,7 +46,7 @@ type RequestedPosition int
 const (
 	aisleName  string            = "aisle"
 	windowName string            = "window"
-	aisle      RequestedPosition = iota // okay to start from non-zero value
+	aisle      RequestedPosition = iota
 	window
 )
 
@@ -137,6 +142,12 @@ func (s SeatingState) String() string {
 	return builder.String()
 }
 
+//func (s *SeatingState) fulfillRequest(req GroupRequest) (bool, string) {		// todo finish
+//	for lineIdx, line := range s.lines {
+//
+//	}
+//}
+
 type Input struct {
 	state    SeatingState
 	requests []GroupRequest
@@ -155,21 +166,10 @@ func ReadInput(reader io.Reader) (Input, error) {
 			}
 			result.state.lines = make([]SeatingLine, 0, seatingLines)
 		case lineIdx <= cap(result.state.lines):
-			sl := SeatingLine{}
-			side := make([]LinePosition, 0)
-			for _, r := range line {
-				if r == passageName {
-					sl.left = side
-					side = make([]LinePosition, 0)
-					continue
-				}
-				position, err := NewLinePosition(r)
-				if err != nil {
-					return Input{}, err
-				}
-				side = append(side, position)
+			sl, err := readSeatingLine(line)
+			if err != nil {
+				return Input{}, err
 			}
-			sl.right = side
 			result.state.lines = append(result.state.lines, sl)
 		case lineIdx == cap(result.state.lines)+1:
 			grAmt, err := strconv.Atoi(line)
@@ -178,16 +178,7 @@ func ReadInput(reader io.Reader) (Input, error) {
 			}
 			result.requests = make([]GroupRequest, 0, grAmt)
 		case lineIdx <= cap(result.state.lines)+1+cap(result.requests):
-			var (
-				size     int
-				side     string
-				position string
-			)
-			_, err := fmt.Fscanf(strings.NewReader(line), "%d %s %s", &size, &side, &position)
-			if err != nil {
-				return Input{}, err
-			}
-			request, err := NewGroupRequest(size, side, position)
+			request, err := readGroupRequest(line)
 			if err != nil {
 				return Input{}, err
 			}
@@ -195,4 +186,40 @@ func ReadInput(reader io.Reader) (Input, error) {
 		}
 	}
 	return result, nil
+}
+
+func readGroupRequest(line string) (GroupRequest, error) {
+	var (
+		size     int
+		side     string
+		position string
+	)
+	_, err := fmt.Fscanf(strings.NewReader(line), "%d %s %s", &size, &side, &position)
+	if err != nil {
+		return GroupRequest{}, err
+	}
+	request, err := NewGroupRequest(size, side, position)
+	if err != nil {
+		return GroupRequest{}, err
+	}
+	return request, nil
+}
+
+func readSeatingLine(line string) (SeatingLine, error) {
+	sl := SeatingLine{}
+	side := make([]LinePosition, 0)
+	for _, r := range line {
+		if r == passageName {
+			sl.left = side
+			side = make([]LinePosition, 0)
+			continue
+		}
+		position, err := NewLinePosition(r)
+		if err != nil {
+			return SeatingLine{}, err
+		}
+		side = append(side, position)
+	}
+	sl.right = side
+	return sl, nil
 }
