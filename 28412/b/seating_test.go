@@ -187,6 +187,25 @@ func TestSeatingLine(t *testing.T) {
 			})
 		}
 	})
+	t.Run("populate", func(t *testing.T) {
+		tests := []struct {
+			inLine   string
+			wantLine string
+		}{
+			{`..._...`, "..._...\n"},
+			{`..._XX.`, "..._##.\n"},
+		}
+		for idx, test := range tests {
+			t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+				line, err := readSeatingLine(test.inLine)
+				assertNoError(t, err)
+				line.populate()
+				got := line.String()
+				want := test.wantLine
+				assertLineString(t, got, want)
+			})
+		}
+	})
 }
 
 func assertLineString(t *testing.T, got interface{}, want string) {
