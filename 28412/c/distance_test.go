@@ -57,6 +57,34 @@ func TestReadInput(t *testing.T) {
 	}
 }
 
+func TestDist(t *testing.T) {
+	tests := []struct {
+		name string
+		ai   int
+		S    []int
+		want int
+	}{
+		{"dist(1,{2,3}) = |1−2| + |1−3| = 3", 1, []int{2, 3}, 3},
+		{"dist(2,{1,3}) = |2−1| + |2−3| = 2", 2, []int{1, 3}, 2},
+		{"dist(3,{2,4}) = |3−2| + |3−4|=2", 3, []int{2, 4}, 2},
+		{"dist(4,{2,3}) = |4−2| + |4−3|=3", 4, []int{2, 3}, 3},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := dist(test.ai, test.S)
+			want := test.want
+			assertDist(t, got, want)
+		})
+	}
+}
+
+func assertDist(t *testing.T, got int, want int) {
+	t.Helper()
+	if got != want {
+		t.Fatalf("Got %d dist, want %d", got, want)
+	}
+}
+
 func assertNoError(t *testing.T, err error) {
 	t.Helper()
 	if err != nil {
@@ -64,7 +92,7 @@ func assertNoError(t *testing.T, err error) {
 	}
 }
 
-func assertInput(t *testing.T, got interface{}, want Input) {
+func assertInput(t *testing.T, got Input, want Input) {
 	t.Helper()
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("Got %#v input, want %#v", got, want)

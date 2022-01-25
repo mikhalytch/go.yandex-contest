@@ -46,3 +46,18 @@ WORDLOOP:
 	}
 	return result, nil
 }
+
+func dist(ai int, S []int) int {
+	sum := 0
+	for _, aj := range S {
+		sum += intAbs(ai - aj)
+	}
+	return sum
+}
+
+func intAbs(i int) int {
+	if i < 0 {
+		return -i
+	}
+	return i
+}
