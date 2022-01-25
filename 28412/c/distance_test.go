@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -35,6 +36,38 @@ func TestCalcDistance(t *testing.T) {
 			CalcDistance(reader, writer)
 			assertCalcResult(t, writer.String(), test.want)
 		})
+	}
+}
+
+func TestReadInput(t *testing.T) {
+	tests := []struct {
+		in   string
+		want Input
+	}{
+		{in1, Input{k: 2, a: []int{1, 2, 3, 4}}},
+		{in2, Input{3, []int{3, 2, 5, 1, 2}}},
+		{in3, Input{2, []int{3, 2, 1, 101, 102, 103}}},
+	}
+	for idx, test := range tests {
+		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+			got, err := ReadInput(strings.NewReader(test.in))
+			assertNoError(t, err)
+			assertInput(t, got, test.want)
+		})
+	}
+}
+
+func assertNoError(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+}
+
+func assertInput(t *testing.T, got interface{}, want Input) {
+	t.Helper()
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Got %#v input, want %#v", got, want)
 	}
 }
 
